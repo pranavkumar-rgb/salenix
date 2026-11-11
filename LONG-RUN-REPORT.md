@@ -238,7 +238,9 @@ Created: 9 helper server actions (Function = Yes, Public = No) with exactly the 
 Deviation: helpers have no handler (pure functions, allowed by ODC). A service action cannot re-raise the generic exception → handler raises SalesError with the original message (prefixed with "SALES_ERROR: " when missing).
 Test for you (DevTools, after adding the Salenix_Sales reference): call Sales_StageSelfCheck → Passed True, FailedCount 0, Report "All 89 checks passed." Any FAIL line names the function, input, expected and actual value.
 
-## S6 Sales Company actions — PLAN
+## S6 Sales Company actions — PUBLISHED rev 11 (env_app verified, 2026-11-11 08:42 UTC)
+
+### Plan
 Source: notes/company-contact-spec.md §A (companies/actions.ts, lib/companies/*, lib/dedup/*). Public service actions (consumed by the Salenix UI app); shared logic in private server actions (a service action cannot call a service action of its own app).
 Shared private server actions (also used by S7/S8):
 | Element | Rules |
@@ -260,7 +262,7 @@ Service actions (all: Sales_Context first; return Success / OutcomeCode / Messag
 | Company_List(Search, OwnerFilter mine/unassigned/"", IncludeDeleted, SortBy recent/deals/pipeline/won/activity, SortDesc, StartIndex, MaxRecords) → Items, TotalCount | scope; Search = Name contains (source name only); IncludeDeleted → deleted rows only (source listDeletedCompanies) for deleteCompanies roles; MaxRecords 25/50/100 else 50 |
 Not built: hard delete (owner-only, not in the queue), merge, realtime events, embeddings/workflow events.
 
-### Progress S6 (not yet published)
+### Result S6
 - Part A done in the Mentor session (no errors): structures CompanyMatchItem, CompanyItem; private Sales_Context (Foundation_GetMyContext from a server action works in ODC), Sales_RequirePermission, Sales_WriteActivity, Company_RefreshRollups (8 aggregates as in VIEW 0065; counts via LongIntegerToInteger), Company_FindMatches (≤ 2000 candidates, exact list + fuzzy list sorted by score, top 5).
 - Part B (FindSimilar, Create, Update) sent.
 
@@ -284,4 +286,15 @@ Source of the expectations: notes/deal-governance-spec.md §3 (code wins). Actio
 | 14 | FY proration | — | **Not built** |
 | 15 | Qualified → Lead on a dated deal | deal at qualified with date. Deal_ChangeStage(Id, "lead") → (Id, "lead", ClearCloseDate True) → (Id, "lead", ClearCloseDate True, RollbackReasonCode "wrong_stage_advance") | 1st (False, needs_close_date_clear); 2nd (False, rollback_reason_required); 3rd (True, ok): ExpectedCloseDate empty, DealDateChange (D → empty, IsPush False), audit date edit + stage rollback, OriginalCloseDate kept, ForecastCategory pipeline |
 - Part B done (no errors): Company_FindSimilar, Company_Create, Company_Update (public service actions). Notification_Create from Company_Update is allowed in ODC. Handlers: OnValidationError + AllExceptions (MEMBERSHIP_MISSING from Sales_Context passes through as SalesError with the original message).
-- Part C (SoftDelete, Restore, Get, List + RefreshRollups at the end of Create/Update) sent.
+- Part C done: Company_SoftDelete, Company_Restore, Company_Get, Company_List; Company_RefreshRollups now called at the end of Create, Update, Restore. Mentor added the persona scope + MergedIntoId filter to SoftDelete/Restore (consistent with the addendum). List: dynamic sort through calculated SortKey/TieKey (dates as minutes since 2000-01-01; null LastActivityAt sorts oldest).
+Deviations / open: OwnerName is empty (UserProfile not referenced in Sales → NEEDS REFERENCE: Salenix_Sales → Salenix_Foundation: UserProfile, or a Foundation lookup action). Hard delete, merge, realtime, embeddings not built. Server-side dedup (fix of the source's client trust). NormalizedName recomputed on every update (BRD fix).
+Tests for you (DevTools wrappers or the UI app later; Salenix_Sales reference needed):
+1. Flag DedupEnabled on. Company_Create("Acme Pvt Ltd", "acme.com", "IT", null, False) → (True, ok), CompanyId; NormalizedName "acme"; ActivityLog created.
+2. Company_Create("ACME Limited", …, False) → (False, duplicate_warning), Matches[0] Kind exact. Same with DedupOverride True → (True, ok_dedup_override), activities created + dedup_override.
+3. Company_FindSimilar("Acmee") → fuzzy match with Score ≥ 0.55. Flag off → empty.
+4. Company_Create("") → (False, validation), FailedRules "Name is required"; 201-char name → "Name must be 200 characters or fewer".
+5. As member (sales persona): Company_Create with OwnerId = another user → (False, owner_not_allowed). Company_List as member shows only own + unassigned.
+6. Company_Update(id, "Acme Corp", …, OwnerId = manager) as admin → (True, ok); NormalizedName "acme"; ActivityLog owner_changed; Notification "You now own Acme Corp" for the manager.
+7. Company_SoftDelete(id) as member → "Permission denied: requires "deleteCompanies" (current role: member)"; as admin → (True, ok); again → (False, not_found "Company not found or already deleted."). Company_List(IncludeDeleted True) as admin shows it; Company_Restore → (True, ok).
+8. Company_Get of a deleted id → "Company not found in this tenant."
+
