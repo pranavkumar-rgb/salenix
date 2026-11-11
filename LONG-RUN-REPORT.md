@@ -404,3 +404,15 @@ Mentor listed every index of every entity in Salenix_Foundation (rev 24) and Sal
 | Sales | all 22 entities | S1–S4 plans | all present (uniques: CustomFieldValue, DealContact, Offering, DealOffering, DealValueSplit, DealRiskScore, StageGate) | OK |
 Missing or wrong: **none**. Optional (not in our specs, present in the source): Deal (TenantId, HealthBand); Deal (TenantId, PushCount/RollbackCount/QuotaWeight) — source partial indexes; ActivityLog LegacyUuid and LegacyUuid on child tables (DealAuditLog, DealDateChange, DealStageHistory, DealScore, DealRiskScore, ForecastSnapshot, DealContact, DealOffering, DealValueSplit, DealOrderProof) — only needed if the migration looks children up by LegacyUuid. Not added unless you ask.
 Platform: no automatic index on cross-app references (TenantId in Sales, User Identifier anywhere) — our explicit (TenantId, …) indexes cover the queries.
+
+## X2 Foundation — APPLIED in Mentor session 1067f005 (NOT published, waiting for approval)
+| Element | Old → New |
+|---|---|
+| Foundation_EnsureProfileCore (new, private) | profile logic moved here unchanged (sign-in check → MEMBERSHIP_MISSING "You are not signed in."; existing profile → Created False; else User email/username lower-trim, name split, 100-char truncation, CreateUserProfile → Created True); new output ProfileId; AllExceptions re-raises FoundationError with the original message |
+| Foundation_EnsureMyProfile | inline logic → one call to EnsureProfileCore; output and handlers unchanged (unexpected errors still logged + generic message) |
+| Invitation_Accept | inline profile block + comment + 5 locals → one call to EnsureProfileCore at the same place; all other nodes unchanged |
+| Invitation_Create AcceptLink | AppBaseUrl + "/accept-invite?token=" + Token → AppBaseUrl + "/AcceptInvite?token=" + Token |
+| UserProfile | Public No → Yes |
+| Tenant | + DeletedAt (Date Time, optional, no index) |
+| Member_GetRole (new, public service) | ResolveContext; Membership of the acting tenant for TargetUserId → IsMember, RoleCode, Status (lower-case); handlers as Member_Remove |
+Indexes: none missing (X1). Validation: 0 errors.
