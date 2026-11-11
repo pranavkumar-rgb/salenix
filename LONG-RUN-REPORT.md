@@ -419,3 +419,16 @@ Indexes: none missing (X1). Validation: 0 errors.
 Invitation_Accept handler check (after review): OnValidationError / OnMembershipMissing re-raise unchanged; AllExceptions (Log Error = False) logs the original and raises "FOUNDATION_ERROR: Something went wrong. Please try again." — a FoundationError from EnsureProfileCore already ends there, so no change was needed (my earlier remark that the original message would reach the caller was wrong).
 Pending (not built, recorded): indexes Deal (TenantId, HealthBand) and Deal (TenantId, PushCount/RollbackCount/QuotaWeight) for the At-risk list and reports.
 Tests X2: 1. Foundation_EnsureMyProfile for a new user → Created True, then False. 2. Invitation_Create → AcceptLink "https://vtpl-dev.outsystems.app/Salenix/AcceptInvite?token=…". 3. Invitation_Accept for a user without a profile → profile created, membership active. 4. Member_GetRole(member id) → IsMember True, RoleCode member, Status active; a user of another workspace → IsMember False.
+
+## X3 Sales — APPLIED in Mentor session e1804d96 (NOT published, waiting for approval)
+| Element | Change |
+|---|---|
+| Deal_Create | after lost_reason_required: if hold → Foundation_TodayFor; reason or revisit empty → hold_reason_required "Moving to Hold needs a reason and a revisit date."; revisit < today → hold_revisit_past "The revisit date must be today or later." |
+| Deal_ChangeStage | after hold_reason_required (before loading the deal): if hold → TodayFor; revisit < today → hold_revisit_past |
+| Deal_Update | after hold_via_edit: if staying in hold → EffReason/EffRevisit (input or stored) empty → hold_reason_required; a newly set revisit date (≠ stored) < today → hold_revisit_past (an existing overdue date does not block other edits) |
+| Contact_Update | after the company check: active contact with the same email (excluding this one) → duplicate_email |
+| Contact_Restore | before clearing DeletedAt: same check on the stored email → duplicate_email (no FailedRules output in this action) |
+| Indexes | IX_<Entity>_LegacyUuid (non-unique) on ActivityLog, DealAuditLog, DealDateChange, DealStageHistory, DealScore, DealRiskScore, ForecastSnapshot, DealContact, DealOffering, DealValueSplit, DealOrderProof |
+Choices D7/D16/D19 (follow the source, no BRD rule): D7 a deal created without owner stays unassigned (also by members); D16 stall flag not built yet (when built, Hold counts as active, as in the source); D19 Deal_Update writes MarginBps from the input (0 = empty), so a full save at Lead/Hold/Lost with an empty margin clears it, as in the source.
+Pending (not built): indexes Deal (TenantId, HealthBand), Deal (TenantId, PushCount/RollbackCount/QuotaWeight) for the At-risk list and reports.
+Validation: 0 errors.
