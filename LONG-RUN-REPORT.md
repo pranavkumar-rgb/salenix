@@ -314,7 +314,9 @@ Source: notes/company-contact-spec.md §B (contacts/actions.ts, lib/contacts/*, 
 | Contact_SoftDelete / Contact_Restore | deleteContacts / restoreContacts; messages "Contact not found or already deleted." / "Contact not found in this tenant."; activity deleted/restored; refresh rollups of its company |
 | Contact_Get / Contact_List(Search, CompanyId, NoCompany, OwnerFilter, IncludeDeleted, StartIndex, MaxRecords) | scope own+unassigned for sales persona; Search on FirstName, LastName, Email, Title; sort CreatedAt desc, Id desc (source); page 25/50/100 default 50; CompanyName from Company |
 
-## S8 Sales deal governance core — PLAN
+## S8 Sales deal governance core — PUBLISHED rev 13 (env_app verified, 2026-11-11 09:08 UTC)
+
+### Plan
 Source: notes/deal-governance-spec.md §2 (DB triggers 0045/0058/0060/0071 → server actions; deals/actions.ts). Return shape: Success, OutcomeCode, Message, FailedRules (Text, "; "-joined), DealId, Changed, FromStage, ToStage. Check order = spec 2.c.
 Private server actions:
 | Element | Rules (spec ref) |
@@ -337,11 +339,50 @@ Not built in S8: stage gates, offerings, custom fields, Deal_Patch, approve/reje
 Open: OwnerName empty (UserProfile reference); no email re-check on update/restore (source).
 Tests for you: 1. Contact_Create("Ravi", "Kumar", "Ravi@Acme.com", "", "", <Acme id>, null) → (True, ok); Acme ContactCount 1. 2. Same email in other case → (False, duplicate_email "A contact with this email already exists: Ravi Kumar."). 3. Contact_Create("", "", "", …) → (False, validation, "Provide a first name, last name, or email."). 4. CompanyId of another workspace / deleted company → company_invalid. 5. Contact_FindSimilar("Ravi", "Kumaar", "") with DedupEnabled → fuzzy match ≥ 0.55; flag off → empty. 6. Contact_Update moving the contact to another company → both companies' ContactCount refreshed. 7. Contact_SoftDelete as member → permission denied (deleteContacts); as admin → ok, ContactCount −1; Contact_Restore → +1. 8. Contact_List(Search "kum") finds Ravi; as member only own + unassigned.
 
-### Progress S8 (not yet published)
+### Result S8
 - Part A done (no errors): Deal_ApplyCloseDateChange (G1), Deal_ApplyGovernance (G2 audit rows stage/date/amount, G3 stage history, QuotaWeight 0.50 only when PushCount > 3), Deal_CheckOrderProof (G4 messages; money formatted "<CUR> 1,234.56", JPY 0 decimals). Node text checked.
 - Part B (Deal_Create) sent. Decisions applied: create at Hold without reason allowed (source; D4 open); lost reason required on the server (BRD; source UI only); owner assignment uses permission assignDeals (decision 6; source: only owner/manager), manager cannot assign to an owner (Membership role lookup — Membership is referenced, so no extra reference needed).
 - Part B done: Deal_Create (public). Node text checked: validation order permission → shape (+margin) → lead_close_date → close_date_required → won_on_create → lost_reason_required → links → owner → G1 insert → CreateDeal → stage history → activity → rollups.
   **Gap:** the Salenix_Foundation Membership entity is visible in Sales with Id only → manager-cannot-assign-to-owner and "Pick an owner" (active membership) checks NOT built (Comment node in the flow). NEEDS REFERENCE: Salenix_Sales → Salenix_Foundation: Membership attributes UserId, Role, Status (reference refresh), or a Foundation service action Member_GetRole(UserId).
 - Part C (Deal_ChangeStage) sent; Won path returns approval_unavailable (no Approval_Submit reference).
 - Part C done: Deal_ChangeStage (public). Checks: permission → shape ("Invalid stage transition.") → hold_reason_required → not_found → needs_close_date_clear → no_change → rollback_reason_required → close_date_required → margin_required → won: order_proof / approval_unavailable → lost_reason_required → write (G1, G2, G3, ClosedAt, LostReason, Hold fields, approval none, forecast re-derive unless overridden) → activity stage_changed → rollups.
-- Part D (Deal_Update) sent.
+- Part D done: Deal_Update (public). Checks: permission → shape/margin → lead_close_date → close_date_required → lost_reason_required → links → owner → not_found → hold_via_edit → close_date_clear_blocked → rollback_reason_required → won: order_proof / approval_unavailable; staying Won with changed amount/currency → order_proof → write (G1 with CloseDateReason, G2 with amount audit, all fields, ClosedAt, approval none unless staying Won, forecast re-derive only on stage change) → activity → rollups old + new company. Output named **UpdatedDealId** (platform renames an output that clashes with the DealId input). Mentor hit its memory limit once and rebuilt in smaller steps (no leftovers).
+Deviations / decisions for you: create at Hold without reason allowed (source; D4); lost reason required on the server (BRD); owner via assignDeals (decision 6); manager→owner and active-membership owner checks missing (Membership attributes not visible); Won path returns approval_unavailable until Approval_Submit is referenced; stage gates, offerings, custom fields, Deal_Patch, approve/reject apply, won/lost notifications, score/risk recompute not built.
+Tests: see S9 (UAT 1–8, 10, 15 runnable now except the approval part of 8/10).
+
+
+## Summary
+| Batch | App | Revision | Status |
+|---|---|---|---|
+| App map | CLAUDE.md | – | done (commit 2cef2bf) |
+| T1 | Salenix_Theme | 3 | done before the run |
+| H1 | Salenix_Foundation | 20 | verified, no change |
+| H2 | Salenix_Foundation | 21 | published |
+| W1 | Salenix_Foundation | 22 | published |
+| W2 | Salenix_Foundation | 23 | published |
+| F8 | Salenix_Foundation | 24 | published |
+| C1 | Salenix_Sales | 5 | published |
+| S1–S4 | Salenix_Sales | 6–9 | published (22 entities) |
+| S5 | Salenix_Sales | 10 | published |
+| S6 | Salenix_Sales | 11 | published |
+| S7 | Salenix_Sales | 12 | published |
+| S8 | Salenix_Sales | 13 | published |
+| S9 | report | – | written |
+Every publish: revision checked before, env_app verified after, Mentor session closed after. No Production, GL_*, Salenix_Crypto, Salenix_Theme or Setting value touched. Nothing existing deleted or renamed (C1 removed only template elements, as the queue asked).
+
+## Decisions waiting for you
+1. TenantId delete rule is Ignore on every domain entity (ODC does not allow Delete across apps) → how should workspace deletion clean Sales data (event + Sales cleanup action)?
+2. Approval engine design (W1/W2) is new — the source has only Deal.approval_status and DealCreditTerm approved_by/at. Keep the generic engine (Sales keeps its own status columns) or drop it and follow the source exactly?
+3. Reject reason required (queue) vs optional (source).
+4. D4 create at Hold without reason (source allows); D5 hold revisit date in the past; D7 unassigned deals by members; D16 Hold and the stall flag; D19 margin cleared on save at Lead/Hold/Lost (notes/deal-governance-spec.md §4).
+5. Invitation_Accept contains an inline copy of EnsureMyProfile — extract a shared private action (changes the tested EnsureMyProfile)?
+6. Contact email uniqueness only on create (source) — also on update/restore?
+7. AppBaseUrl value (Setting) for invitation links.
+
+## Manual steps for you (in this order)
+1. **Studio, Salenix_Foundation (fresh copy of rev 24):** check OrgInvitation indexes — add TokenHash unique and (TenantId, Email) if missing. Check delete rules/indexes of the new approval entities and F8 entities.
+2. **ODC Portal → Salenix_Foundation → Settings:** set AppBaseUrl.
+3. **Studio, Salenix_Sales (fresh copy of rev 13), reference change only:** refresh Salenix_Foundation and add Approval_Submit, Approval_Cancel, Approval_Decide, Approval_Get, Approval_ListPending, ApprovalItem, ApprovalActionItem, UserProfile (for OwnerName), Membership attributes (UserId, Role, Status). Clear the app property "Global Exception Handler" (points to the deleted Common\OnException). Publish from Studio.
+4. Then tell me to wire: Won approval (replace the approval_unavailable branches), manager/owner assignment check, OwnerName.
+5. **DevTools:** reference refresh (Foundation rev 24 + Salenix_Sales) and Dev_* wrappers for Invitation_*, Approval_*, Company_*, Contact_*, Deal_*, Sales_StageSelfCheck — then run the tests in each batch section (H1, H2, W2, S5–S9).
+6. `git push` (commits are local only).
