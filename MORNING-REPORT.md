@@ -294,3 +294,10 @@ Read-only review of GetMyContext, ResolveContext, HasPermission, CheckPermission
 - Dylan (member): bootstrap refused; MEMBERSHIP_MISSING before SetActive; persona sales after SetActive; Member_ChangeRole / Member_Remove on the owner refused (permission denied).
 - Owner: CreateFirst OK; Workspace_Create OK (new workspace becomes active); ChangeRole Dylan → manager OK; owner role refused ("Pick a role"); own role change / own removal refused; Remove Dylan OK.
 - After removal Dylan gets "MEMBERSHIP_MISSING: You are no longer a member of this workspace" from GetMyContext and Notification_ListMine.
+
+## Salenix_Crypto smoke test (2026-11-11) — PASSED
+DevTools rev 8, TestConsole section "Crypto smoke test", run by the user in ODC Development:
+- ConvertUtcToZone(now, "Asia/Kolkata") = UTC + 5:30 exactly (ODC does not re-shift the value)
+- TodayIn("Asia/Kolkata") = 2026-11-11 (Date, not shifted)
+- Sha256Hex as expected; NewToken(32) = 43 chars
+- TrigramSimilarity 0.45454547, WordSimilarity 0.625, NormalizeCompanyName → [acme]
