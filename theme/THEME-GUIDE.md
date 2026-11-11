@@ -1,4 +1,4 @@
-# Salenix theme guide (v2)
+# Salenix theme guide (v2.1)
 
 Theme file: `theme/salenix-theme.css` (Salenix_Theme -> theme "Salenix", Public). UI prompts use only the classes below; no inline styles, no new CSS in apps.
 
@@ -36,6 +36,7 @@ OutSystems UI variables (`--color-primary`, `--color-neutral-0..10`, `--color-ba
 | `sx-page-header` | Row with page title on the left, actions on the right | page header row |
 | `sx-page-title` | Screen title (Fraunces 20px) | `main h1` + `text-xl font-semibold` |
 | `sx-page-subtitle` | One line under the page title | `p mt-0.5 text-[12px] text-slate-500` |
+| `sx-breadcrumb` | Breadcrumb row above the page title (v2.1) | `text-[12px] text-slate-500 gap-1.5` |
 | `sx-section-title` | Heading of a page section (15px) | `h2 text-[15px] font-semibold` |
 | `sx-card-title` | Heading inside a card (13px) | `h2 text-[13px] font-semibold` |
 | `sx-stack` | Vertical list of sections, 12px gap | `flex flex-col gap-3` |
@@ -49,6 +50,7 @@ OutSystems UI variables (`--color-primary`, `--color-neutral-0..10`, `--color-ba
 | `sx-card sx-card-compact` | Small panel, 12px padding | `rounded-lg border bg-white p-3` |
 | `sx-card sx-card-flush` | Card that wraps a table (no padding) | `overflow-hidden rounded-lg border shadow-sm` |
 | `sx-card-header` | Title + action row at the top of a card | `flex justify-between gap-2` |
+| `sx-card-footer` | Action row at the bottom of a card (v2.1) | `mt-3 border-t pt-3 flex justify-end gap-2` |
 | `sx-kpi-strip` | Grid of KPI tiles (2 / 3 / 5 columns) | kpi-strip.tsx grid |
 | `sx-kpi` | One KPI tile in the strip | kpi-strip.tsx tile |
 | `sx-kpi-value` | Big number in a KPI tile (auto-sized 13-19px mono) | kpi-strip.tsx value |
@@ -59,7 +61,7 @@ OutSystems UI variables (`--color-primary`, `--color-neutral-0..10`, `--color-ba
 | `sx-metric-label` | Label (10px uppercase), used in `sx-metric` and `sx-kpi` | metric-card.tsx label |
 | `sx-metric-value` | Value (20px mono), tone colour follows the card | metric-card.tsx value |
 | `sx-metric-hint` | Small hint under the value | metric-card.tsx hint |
-| `sx-trend sx-trend-up` / `sx-trend sx-trend-down` | +12% / -4% pill next to the label | metric-card.tsx TrendIndicator |
+| `sx-trend sx-trend-up` / `sx-trend sx-trend-down` / `sx-trend sx-trend-flat` | +12% / -4% / 0% pill next to the label (flat = v2.1) | metric-card.tsx TrendIndicator |
 
 ### Tables and pagination
 | Class | Where to use | Source |
@@ -120,6 +122,16 @@ Replace the default `btn` / `btn-primary` Style Classes with these; do not combi
 | `sx-topbar-search` | Search / command trigger in the header | header.tsx search button |
 | `sx-kbd` | Shortcut hint ("Ctrl K") | header.tsx kbd |
 | `sx-topbar-actions` | Right cluster (bell, workspace, user menu) | header.tsx right div |
+| `sx-topbar-workspace` | Workspace name text in the header (v2.1) | workspace-switcher.tsx trigger |
+| `sx-shell` | Outer row of the app layout: rail + main (v2.1) | dashboard-shell.tsx |
+| `sx-shell-main` | Right column: top bar + content (v2.1) | dashboard-shell.tsx |
+| `sx-shell-content` | Content area under the top bar (v2.1) | dashboard-shell.tsx main |
+
+### Deal path bar (v2.1)
+| Class | Where to use | Source |
+|---|---|---|
+| `sx-path` | Container of the stage chevron bar | deal-path-bar.tsx root |
+| `sx-path-step` | One stage step; add `sx-path-done` (passed) or `sx-path-current` (current); upcoming = no extra class | deal-path-bar.tsx button |
 
 ### Drawer
 | Class | Where to use | Source |
@@ -139,6 +151,7 @@ Replace the default `btn` / `btn-primary` Style Classes with these; do not combi
 | `sx-empty` | Full-page "no records" state | `border-dashed border-slate-300 bg-slate-50 py-16` |
 | `sx-empty-inline` | "No items" inside a card | `border-dashed border-slate-200 bg-slate-50/60 py-5` |
 | `sx-empty-title` | Bold first line of an empty state | `text-[13px] font-semibold` |
+| `sx-empty-icon` | Icon above the empty-state title (v2.1) | `h-6 w-6 text-slate-400 mb-2` |
 | `sx-skeleton` | Loading placeholder bar (set width by container) | loading.tsx `animate-pulse rounded bg-slate-200` |
 | `sx-muted` | Secondary text 12px | `text-[12px] text-slate-500` |
 | `sx-small` | Meta text 11px (dates, footnotes) | `text-[11px] text-slate-400` |

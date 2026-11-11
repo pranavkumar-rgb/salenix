@@ -523,3 +523,153 @@ Publish from Studio (reference change only).
 - F5 Workspace_ListMine / SetActive / Create
 - F6 Invitations (hash token, 7-day expiry), role change, remove member (last-admin guards)
 - F7 Notification, FileAttachment + service actions
+
+---
+# DevTools T1–T8 — PUBLISHED rev 10 (env_app verified, 2026-11-11 11:16 UTC)
+Pre-check: DevTools rev 9 (Studio reference publish), Foundation rev 25, Sales rev 17 deployed. Mentor session 8cf23f26 (read-only check, P1–P7b, read-only verification, publish), closed after the publish.
+| Prompt | Section | Dev_* wrappers (no handler, existing pattern) | Screen |
+|---|---|---|---|
+| P1 | T1 Time, T3 Member_GetRole, T5 StageSelfCheck | Dev_Time_Today (GetMyContext → TodayFor + NowFor, UtcNow), Dev_Member_GetRole, Dev_Sales_StageSelfCheck | Run_* + Result_* lists |
+| P2 | T2 Invitations | Dev_Invitation_Create / ListPending / Revoke / GetByToken / Accept | token copied from AcceptLink into In_Invitation_Token; InvitationTable |
+| P3 | T4 Approvals | Dev_Approval_Submit / ListPending / Decide / Cancel / Get | RequestId copied into In_Approval_RequestId; ApprovalTable, ApprovalActionTable |
+| P4 | T6 Companies | Dev_Company_FindSimilar / Create / Update / SoftDelete / Restore / Get / List | CompanyMatchTable, CompanyTable; new CompanyId copied into In_Company_Id |
+| P5 | T7 Contacts | Dev_Contact_FindSimilar / Create / Update / SoftDelete / Restore / Get / List | ContactMatchTable, ContactTable |
+| P6a | T8 deal form + write | Dev_Deal_Create / Update / ChangeStage | Block_Deal_Form (23 inputs, OutSystemsUI Columns2), new DealId copied into In_Deal_Id |
+| P6b | T8 read / approval / PO | Dev_Deal_Get / GetHistory / Approve / Reject, Dev_DealOrderProof_Add | Get (34 lines + DealProofTable), Load into form, History (audit, date change, stage tables), Refresh_DealView |
+| P7a/b | T8 UAT buttons | – | Block_Deal_UAT at the top of T8: 25 case buttons + Clear log; helpers UAT_ResetForm, UAT_Log, UAT_ClearLog; log line = label (with expected result) → result lines |
+Totals: 35 new Dev_* (50 in the app), 36 new Run_* (all with AllExceptions → "ERROR: " + message), 28 UAT_* actions, Refresh_DealView. Validation 0 errors; 18 warnings = existing font offline-cache warnings.
+Conversions: ids TextToLongInteger (empty → 0); OwnerId TextToIdentifier (empty → empty id); dates YYYY-MM-DD, empty → NullDate; booleans "true"/"false" text.
+Gap: **DealOrderProof_Remove is not available in DevTools** — it exists and is Public in Sales rev 17 (checked below); only the DevTools reference is missing.
+UAT 8.2 uses the browser date (CurrDate) for IssuedOn — fine when the browser is in India (workspace timezone Asia/Kolkata).
+
+## Test order (DevTools rev 10, https://vtpl-dev.outsystems.app/Salenix_DevTools)
+Users: A = workspace owner (bootstrap), B = second account. Add B with DevOnly_AddMember(email, "member"); switch B's role with Member_ChangeRole as A. Get user ids from GetMyContext (ActingUserId) while logged in as each user. Check flags first (GetFlags); dedup tests need DedupEnabled = True.
+| # | Who | Step | Expected |
+|---|---|---|---|
+| 1 | A | T1 Run | OK; TenantId = active workspace; Today 2026-11-11 (workspace date); Timezone Asia/Kolkata; LocalNow = UtcNow + 5:30 |
+| 2 | A | T5 Run | Passed True, FailedCount 0, Report "All 89 checks passed." |
+| 3 | A | T3 with B's id; then with a random number | IsMember True, RoleCode member, Status active; random → IsMember False |
+| 4 | A | T2 Create("NewUser@Example.com ", "member") | InvitationId > 0; AcceptLink ".../Salenix/AcceptInvite?token=" + 43 chars; ExpiresAt ≈ now + 7 days; token filled |
+| 5 | A | T2 Create same email again; ListPending | one row for newuser@example.com (old one deleted), InvitedByName filled |
+| 6 | A | T2 Create(B's email, "member") / role "owner" / email "abc" | "already a member of this workspace." / "Pick a role" / "Enter a valid email address" |
+| 7 | A | T2 GetByToken(token); then a wrong token | IsValid True, MaskedEmail "n****@example.com", RoleCode member; wrong → IsValid False |
+| 8 | A | T2 Revoke(id); again | OK; second → ERROR "Invalid invitation id." |
+| 9 | A | T2 Create(B2 email you can log in with) → copy token; log in as that user → GetByToken + Accept; Accept again | Accept: TenantId + WorkspaceName; second → "This invitation is invalid or has expired."; as a different email → "sent to a different email address" |
+| 10 | B (member) | T4 Submit("deal_won", 101, "Test deal"); Submit again | pending, RequestId > 0; then already_pending, same id |
+| 11 | B | T4 Decide(any id, "approve", "") | ERROR permission denied approveDeals (member) |
+| 12 | A → B manager | Member_ChangeRole(B, "manager"); B: T4 ListPending(""), Decide(id, "reject", ""), (id, "maybe", ""), (id, "approve", ""), again, (id, "reject", "x") | list has 101; "Enter a reason for the rejection."; "Approve or reject?"; approved; already_decided; "no longer awaiting approval." |
+| 13 | B manager | T4 Submit("credit_terms", 55, "Terms"); Get(id) | auto_approved, AutoApproved True; actions submitted + auto_approved |
+| 14 | A → B member | Member_ChangeRole(B, "member"); B: T4 Submit("deal_won", 102, "x"), Cancel("deal_won", 102), Get(id) | pending; CancelledCount 1; actions submitted, cancelled |
+| 15 | A | T6 Create("Acme Pvt Ltd", "acme.com", "IT", "", false) | ok, CompanyId; Get → NormalizedName "acme" |
+| 16 | A | T6 Create("ACME Limited", …) then with DedupOverride true; FindSimilar("Acmee") | duplicate_warning (match Kind exact); then ok_dedup_override; fuzzy match Score ≥ 0.55 (flag on) |
+| 17 | A | T6 Create("") | validation, FailedRules "Name is required" |
+| 18 | B member | T6 Create with OwnerId = A; List | owner_not_allowed; list = own + unassigned only |
+| 19 | A | T6 SoftDelete; again; List(IncludeDeleted true); Restore; Get of a deleted id | ok; not_found; row listed; ok; "Company not found in this tenant." (B member SoftDelete → permission denied deleteCompanies) |
+| 20 | A | T7 Create("Ravi", "Kumar", "Ravi@Acme.com", "", "", Acme id, ""); same email upper case; all empty | ok (Acme ContactCount 1); duplicate_email; "Provide a first name, last name, or email." |
+| 21 | A | T7 Update another contact to Ravi's email; delete Ravi, create new with same email, Restore Ravi | duplicate_email; duplicate_email (X3) |
+| 22 | B member | T8 UAT1, UAT2, UAT3 | lead_close_date; close_date_required; margin_required |
+| 23 | B member | UAT4 setup, step 1, step 2 | ok; rollback_reason_required; ok — Get: Stage qualified, RollbackCount 1, ForecastCategory pipeline; History: audit rollback budget_lost "x", stage rows |
+| 24 | B member | UAT5 setup, step 1, step 2 | ok; hold_reason_required; ok — ForecastCategory omitted, HoldReason timing, HoldRevisitOn 2027-01-15 |
+| 25 | B member | UAT6 setup, push 1–4 | PushCount 1,2,3,4; after push 3 QuotaWeight 1; after push 4 QuotaWeight 0.5, TotalSlipDays 28, OriginalCloseDate 2026-12-01; 4 DealDateChange rows IsPush True |
+| 26 | B member | UAT7 pull | PushCount 4, QuotaWeight 0.5, TotalSlipDays 9, IsPush False |
+| 27 | B member | UAT15 setup, step 1, 2, 3 | needs_close_date_clear; rollback_reason_required; ok — ExpectedCloseDate empty, OriginalCloseDate kept |
+| 28 | B member | UAT8 setup, won no PO, add PO, UAT8/10 won | ok; order_proof; ok ProofId; ok — ApprovalStatus pending, ApprovalRequestId > 0, ForecastCategory closed_won. Note the deal id |
+| 29 | A → B manager | B: type the UAT8 deal id into Deal Id, UAT9 reject | ok — Stage negotiation, ApprovalStatus rejected, RollbackCount 1, ClosedAt empty, ForecastCategory commit; audit rollback approval_rejected "price" |
+| 30 | B manager | UAT8 setup, add PO, UAT8/10 won (UAT10) | ok — ApprovalStatus approved immediately (auto-approved) |
+| 31 | B manager | Deal form: Create with OwnerId = user id of A (owner); then OwnerId = a random number | owner_assign_forbidden "Managers cannot assign deals to an owner."; owner_invalid |
+| 32 | any | X3 by hand in the form: Create Stage hold without HoldReason; with HoldRevisitOn yesterday | hold_reason_required; hold_revisit_past |
+Not testable yet: UAT 11-14 (stage gates, offerings, value split, FY proration not built). PO remove: added in rev 12 (see below).
+
+## Sales rev 17 read-only check (2026-11-11, Mentor session 11f4b26e, nothing changed)
+Every S10 element is present at rev 17 and matches S10: Deal.ApprovalRequestId (Long Integer, optional, default 0); structures DealItem (52 attributes), DealOrderProofItem (13), DealAuditItem (10), DealDateChangeItem (8), DealStageItem (4), all Public; service actions Deal_Approve, Deal_Reject, Deal_Get, Deal_GetHistory, DealOrderProof_Add, DealOrderProof_Remove(ProofId, DealId), all Public with OnValidationError + AllExceptions; Money_Format private Function (inputs optional); owner checks in Deal_Create (OwnerId ≠ empty and ≠ actor) and Deal_Update (after not_found, FinalOwner ≠ empty/actor/stored owner); Won wiring (Approval_Submit → approval_failed, ApprovalStatus/By/At/RequestId assigns, Approval_Cancel last node) in Deal_ChangeStage and Deal_Update; Deal_Reject ForecastCategory = If(Overridden, kept, Forecast_CategoryFor("negotiation")). Global Exception Handler empty. Warnings: 2 unused FailedRules outputs (Deal_Approve, DealOrderProof_Remove) + 18 font. Rev 17 lost nothing.
+
+## FL1 Foundation Settings_SetFlags — PUBLISHED rev 26 (env_app verified, 2026-11-11 11:28 UTC)
+| Element | Rules |
+|---|---|
+| Settings_SetFlags (service, Public) | inputs StageGatesEnabled, DealScoringEnabled, EmailSyncEnabled, ForecastsEnabled, DedupEnabled, OfferingsEnabled (Boolean, mandatory); outputs Created + StageGatesEnabledOut … OfferingsEnabledOut (ODC forbids an output with an input's name). ResolveContext → CheckPermission(role, "manageFeatureFlags") → not allowed: ValidationError "Permission denied: requires "manageFeatureFlags" (current role: <role>)" → OrganizationSettings of the acting tenant: missing → create (entity defaults, Timezone "Asia/Kolkata" as Workspace_Provision, the 6 flags, UpdatedBy, CreatedAt/UpdatedAt) Created True; else GetForUpdate → 6 flags + UpdatedBy/UpdatedAt only → Created False. Handlers as Member_ChangeRole; AllExceptions (Log Error = False) → LogMessage + "FOUNDATION_ERROR: Could not save the feature flags." |
+Difference from the source: setWorkspaceFlags patches only the keys given; ours writes all six (the caller sends the current values of the others). Validation 0 errors.
+Tests (after the DevTools reference + section): as owner/admin Settings_SetFlags(all False except DedupEnabled True) → Created False, DedupEnabledOut True; GetFlags → DedupEnabled True; as manager/member → permission denied manageFeatureFlags.
+**DevTools reference (Studio, fresh copy of rev 10, reference-only publish):** Salenix_Foundation (rev 26) → Settings_SetFlags; Salenix_Sales (rev 17) → DealOrderProof_Remove. Then I add the "T0 Flags" and "Remove proof" sections.
+
+## DevTools P8 — PUBLISHED rev 12 (env_app verified, 2026-11-11 11:38 UTC; rev 11 = Studio reference publish Settings_SetFlags + DealOrderProof_Remove)
+| Element | Change |
+|---|---|
+| Section_T0_Flags (first container under the page heading) | 6 checkboxes Flag_*; "Load" → Run_Flags_Load (existing Dev_GetFlags → Flag_*); "Save" → Run_Flags_Save → new Dev_Settings_SetFlags → Created + 6 Out values |
+| TestConsole OnReady (was empty) | Start → Run_Flags_Load → End (checkboxes prefilled) |
+| Block_Deal_Proof | In_Proof_RemoveId + "Remove proof" → Run_DealOrderProof_Remove → new Dev_DealOrderProof_Remove(ProofId, DealId = In_Deal_Id) |
+| Run_DealOrderProof_Add | + Assign In_Proof_RemoveId = If(ProofId > 0, LongIntegerToText(ProofId), In_Proof_RemoveId) |
+Validation 0 errors, 18 font warnings.
+Extra tests: T0 (owner/admin) tick DedupEnabled → Save → Created False, DedupEnabledOut True; reload page → box stays ticked; as manager/member Save → ERROR permission denied manageFeatureFlags. Remove proof: deal not Won → ok; same ProofId again → "That PO is no longer on this deal."; Won deal → won_locked "A Won deal keeps the PO it was won on. …".
+
+## DevTools P9 fix — PUBLISHED rev 13 (env_app verified, 2026-11-11 16:09 UTC)
+Bug found by the user: T1 showed UtcNow 17:23 and LocalNow 22:53 at 17:23 IST (the browser converted the DateTime outputs again: UTC +5:30, wall clock +5:30 twice). WorkspaceTable showed one row twice.
+Cause (node text read first): Dev_Time_Today returned DateTimes to the client; every Run_ action cleared its Result_ list and table lists BEFORE the server call, so two overlapping runs (double click, OnReady + Load) both cleared, then both appended.
+| Element | Old → New |
+|---|---|
+| Dev_Time_Today | outputs Today, LocalNow, UtcNow Date/DateTime → Text built on the server: Today "yyyy-MM-dd"; LocalNow FormatDateTime(NowFor.LocalNow, "yyyy-MM-dd HH:mm:ss") + " (<zone>, wall clock)"; UtcNow FormatDateTime(CurrDateTime(), …) + " UTC" |
+| Run_Time_Today | shows the texts as is (no DateToText/DateTimeToText on the client) |
+| All 53 Run_* | Start → ClearResult → [ClearTable] → Dev_ call → appends  ⇒  Start → Dev_ call → ClearResult → appends (Run_Deal_LoadForm, Run_Flags_Load: call → Assign → ClearResult) |
+| 12 table-filling Run_* | ClearTable + For Each/ListAppend → one Assign of the whole list after the call (WorkspaceItems, NotificationItems, InvitationItems, ApprovalItems, ApprovalActions, CompanyMatches ×2, CompanyItems, ContactMatches, ContactItems, DealProofs, DealAuditRows/DealDateChanges/DealStages) |
+Unchanged: UAT_*, Refresh_DealView, OnReady, RunCryptoSmokeTest, handlers. Validation 0 errors, 18 font warnings.
+Rule added to CLAUDE.md (addendum): NowFor wall-clock DateTime is server-only; the UI gets UTC DateTimes and formats them on the client.
+Note: other DevTools DateTime lines (ExpiresAt, CreatedAt, …) are UTC values formatted by the browser → shown in browser local time (correct per the rule).
+Retest: T1 → UtcNow = IST − 5:30 with " UTC", LocalNow = IST wall clock; Workspace_ListMine double click → each workspace once, Count = number of rows.
+
+---
+# Run 2026-11-11 evening — UIKit + demo data (standing approval: publish after a clean report)
+
+## U1 Salenix_UIKit cleanup — nothing to do (no publish)
+REPORT ONLY (Mentor): the library was empty — no UI flows, blocks, themes, images, resources, scripts, actions, structures, settings; only the (System) reference; 0 errors / 0 warnings. Nothing removed, nothing published (rev 3 stayed).
+
+## T2 Salenix_Theme v2.1 — PUBLISHED rev 4 (publish_status success, 2026-11-11 16:27 UTC; library, no env_app record)
+Added because the blocks needed classes the theme did not have (rule: no CSS outside the Theme app). Appended at the end of the style sheet (1172 → 1292 lines), nothing existing changed; same text as theme/salenix-theme.css lines 1173–1292; THEME-GUIDE.md updated (v2.1).
+| Class | For | Source |
+|---|---|---|
+| sx-shell, sx-shell-main, sx-shell-content (+ phone rule: rail on top, full width) | AppLayout | dashboard-shell.tsx |
+| sx-topbar-workspace | AppLayout workspace name | workspace-switcher.tsx trigger |
+| sx-breadcrumb | PageHeader | page header rows |
+| sx-card-footer | Card | card footer rows |
+| sx-trend-flat | KpiTile neutral delta | metric-card.tsx TrendIndicator |
+| sx-empty-icon | EmptyState | dashboard empty states |
+| sx-path, sx-path-step, sx-path-done, sx-path-current | StagePathBar | deals/[id]/_components/deal-path-bar.tsx |
+Validation 0 errors, 1 warning (existing Google Fonts offline-cache).
+
+## U2 Salenix_UIKit display blocks — PUBLISHED rev 4 (publishSucceeded 2026-11-11 16:34 UTC; library, confirm through a consumer)
+UI flow UIKit; all blocks Public; widgets = Containers / Expressions / If / List / Placeholders; only Salenix_Theme classes; no inline styles, no colours, no server calls. Read-back of the whole library done; every class used exists in theme v2.1.
+| Element | Inputs (default) | Placeholders | Classes | Source file |
+|---|---|---|---|---|
+| Stage_Label (client Function, Public) | StageCode → Label (Lead…Lost, else trimmed input) | – | – | lib/stage-gates/types.ts STAGE_LABELS |
+| Money_FormatText (client Function + JS node, Public) | AmountMinor, CurrencyCode, Compact, FractionDigits → Text | – | – | lib/currency/format.ts, lib/incentives/format.ts |
+| AppLayout | WorkspaceName (""), BrandName ("Salenix"), RailCollapsed (False) | Menu, UserMenu, MainContent | sx-shell, sx-rail (+ sx-rail-collapsed), sx-rail-brand, sx-rail-nav, sx-shell-main, sx-topbar, sx-topbar-workspace, sx-topbar-actions, sx-shell-content | components/dashboard-shell.tsx, sidebar.tsx, header.tsx |
+| PageHeader | Title, Subtitle ("") | Breadcrumb, Actions | sx-breadcrumb, sx-page-header, sx-page-title, sx-page-subtitle, sx-row | dashboard page headers |
+| Card | Title (""), Variant ("" / compact / flush), ShowFooter (False) | HeaderActions, Body, Footer | sx-card (+ compact / flush), sx-card-header, sx-card-title, sx-row, sx-card-footer | metric-card.tsx, card panels |
+| KpiTile | Label, Value (Text), Delta (""), Tone ("neutral" / positive / negative) | – | sx-kpi, sx-row, sx-metric-label, sx-trend + sx-trend-up / -down / -flat, sx-kpi-value | kpi-strip.tsx, metric-card.tsx |
+| StageBadge | StageCode, Label ("") | – | "sx-stage sx-stage-" + ToLower(Trim(StageCode)) | components/deal-highlights.tsx STAGE_BADGE_STYLES |
+| StatusBadge | Label, Tone ("neutral"; info / success / warning / danger) | – | sx-badge + sx-badge-neutral / info / positive / warning / negative | lib/brand/tokens.ts STATUS_TINTS |
+| MoneyText | AmountMinor, CurrencyCode ("INR"), Compact (False), FractionDigits (2) | – | sx-mono | as Money_FormatText |
+| EmptyState | IconName ("inbox", Font Awesome), Title, Message (""), Inline (False) | Action | sx-empty / sx-empty-inline, sx-empty-icon fa fa-<icon>, sx-empty-title, sx-muted, sx-row | dashboard empty states |
+| StagePathBar | StageCodesCsv ("lead,qualified,proposal,negotiation,won"), CurrentStageCode | – | List "sx-path"; items "sx-path-step" + sx-path-done / sx-path-current | deal-path-bar.tsx (gate pop-ups not built) |
+Internal: structure PathStep (Code, Label, StateClass; Public No), StagePathBar local Steps + BuildSteps (OnInitialize + OnParametersChanged). Hold / lost → no step done or current (as the source).
+Deviations: StagePathBar takes a CSV text instead of a Text List (easier to pass from screens); Card got ShowFooter, Variant and HeaderActions (an empty footer would still draw its top border); Money_FormatText not run yet (expected "₹12,34,567.89", compact "₹12.3L" / "₹1.2Cr"; non-INR compact uses Intl compact). Validation 0 errors, 0 warnings. Mentor offered a library "release version" — not done (not asked); if Studio does not offer UIKit rev 4 / Theme rev 4 in Manage Dependencies, release them first.
+
+## D1 Salenix_Sales demo data — PUBLISHED rev 18 (env_app verified, 2026-11-11 16:58 UTC) — NOT RUN YET
+Data spec: notes/demo-data.json (+ notes/demo-*.min.json = the exact JSON stored in the actions).
+| Element | Kind | Rules |
+|---|---|---|
+| Setting DevToolsEnabled | Text, secret, default "" | own Sales setting (Sales cannot read Foundation settings); value "true" set by hand in the Portal |
+| DevOnly_DemoGuard(TenantId Long) → ActingUserId, ActingTenantId, Today, NowUtc | private | DevToolsEnabled ≠ "true" → "VALIDATION_ERROR: Demo data tools are disabled (Setting DevToolsEnabled is not true)."; Sales_Context: TenantId ≠ acting tenant or role ≠ owner → "VALIDATION_ERROR: Only the owner of this workspace can seed or clear demo data. Make it your active workspace first."; Today = Foundation_TodayFor |
+| DemoSeed_Companies / Contacts / Deals | private batch runners | JSON text → JSONDeserialize → Length check (12 / 25 / 30) → For Each create-only (by Name / Email / Name; tenant, not deleted); handler AllExceptions (Abort Yes, Log Error No) → LogMessage, Success False, ErrorText |
+| DemoCompanyNameByKey, DemoContactEmailByKey | private Functions | key → name / email (If chains) |
+| DevOnly_SeedDemoData(TenantId, SecondOwnerEmail) → Success, OutcomeCode (ok / already_seeded), Message, Report, SecondOwnerFound, 7 counts | public service | guard → "[DEMO] Tata Steel Ltd" exists → already_seeded → second owner: UserProfile by email + Member_GetRole active, else unassigned + Report line → 3 batches → any failed → raise "SALES_ERROR: Demo seed failed and was rolled back. " + Report → Company_RefreshRollups for every "[DEMO] " company → ok |
+| DevOnly_ClearDemoData(TenantId) → Success, Message, Deals / Contacts / Companies / NotesDeleted | public service | guard → soft-delete (DeletedAt/By, UpdatedAt/By) Deals (Name), Contacts (FirstName), Notes (Body), Companies (Name) starting with "[DEMO] " (aggregate filter Substr(x, 0, 7) = "[DEMO] ", untested at runtime) → rollups per company |
+Data per run: 12 companies (Mumbai, Pune, Bengaluru, Delhi NCR, Chennai, Ahmedabad; GSTIN-shaped values with the right state codes) + 12 company Notes ("[DEMO] HQ: City, State - GSTIN …"); 25 contacts (+91 phones, @example.com, NormalizedName via Salenix_Crypto); 30 deals (lead 5, qualified 5, proposal 5, negotiation 5, hold 3, won 4, lost 3; ₹2L–₹1.5Cr; won/lost closed 6–52 days ago, open deals close in 14–90 days, leads without close date; Probability / ForecastCategory from the stage helpers; QuotaWeight 1; hold with HoldReason budget_deferred / timing / champion_left and HoldRevisitOn +14…+30 days; lost with LostReason); expected 41 DealContact (30 primary decision_maker + 11 influencer), 94 DealStageHistory (one per path step, evenly spaced from CreatedAt to ClosedAt / yesterday, last step open), 4 DealOrderProof (one per Won deal: PO/DEMO/2026/000N, subtotal = deal amount, 18% tax, IssuedOn = close − 2 days).
+Owners: slot A = the caller (owner), slot B = SecondOwnerEmail if an active member (e.g. Dylan), slot "" = unassigned (companies 5 / 4 / 3, deals A 12, B 10, unassigned 8 — see notes/demo-data.json).
+Deviations from the request (and why):
+- **No "discount approval"**: the approval engine knows only deal_won and credit_terms (decision 8), and an owner's Approval_Submit is auto-approved. Instead deal Key 4 "[DEMO] Forging dies retrofit" is Won with ApprovalStatus pending and ApprovalRequestId 0 — the existing legacy path of Deal_Approve / Deal_Reject handles it. Foundation Approval_ListPending stays empty, so the Approvals screen must list Won deals with ApprovalStatus pending (as the source does: deals/queries.ts awaiting list).
+- **Owners "Pranav / Dylan"**: CLAUDE.md has no test-data user ids → owner A = the caller, owner B = the SecondOwnerEmail input.
+- **City / GSTIN / industry**: Company has no City or GSTIN attribute and Sales cannot read LookupValue → industries are free text (no preset in the source, decision 6); city + GSTIN go into one company Note.
+- **Commit per batch not possible**: Sales has no CommitTransaction in its references (adding it is a Studio reference step) → the seed is all-or-nothing.
+- **Guard**: own Sales Setting DevToolsEnabled (not the Foundation one); owner check = owner of the ACTIVE workspace AND TenantId = acting tenant.
+- Deals are written with entity actions, not Deal_Create (governance would refuse back-dated history); no ActivityLog rows.
+Validation 0 errors; warnings = existing 2 FailedRules + 20 font.
+Not done: the run for TenantId 3 and the counts — DevTools has no button, and adding T9 needs a DevTools reference refresh in Studio first (references are by hand). Next steps in the final report of this run.

@@ -1170,3 +1170,123 @@ select.sx-input.sx-input {
 .sx-text-negative {
   color: var(--sx-negative-700);
 }
+
+/* ==========================================================================
+   v2.1 (2026-11-11) - classes for the Salenix_UIKit blocks (batch T2)
+   ========================================================================== */
+
+/* --- App shell (AppLayout) ---------------------------------------------- */
+/* dashboard-shell.tsx: flex min-h-screen; rail left, header + main right */
+.sx-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--sx-bg);
+}
+.sx-shell-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.sx-shell-content {
+  flex: 1;
+  min-width: 0;
+}
+/* workspace name in the header (workspace-switcher.tsx trigger text) */
+.sx-topbar-workspace {
+  font-size: var(--sx-fs-13);
+  font-weight: 600;
+  color: var(--sx-ink-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 767px) {
+  .sx-shell {
+    flex-direction: column;
+  }
+  .sx-shell .sx-rail {
+    width: 100%;
+    min-height: 0;
+    height: auto;
+  }
+}
+
+/* --- Page header breadcrumb --------------------------------------------- */
+/* breadcrumb row above the title: text-[12px] text-slate-500 gap-1.5 */
+.sx-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: var(--sx-fs-12);
+  color: var(--sx-ink-500);
+}
+
+/* --- Card footer -------------------------------------------------------- */
+/* card footer row: mt-3 border-t border-slate-100 pt-3 flex justify-end gap-2 */
+.sx-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sx-divider);
+}
+
+/* --- KPI delta, neutral tone -------------------------------------------- */
+/* TrendIndicator flat: bg-slate-100 text-slate-600 */
+.sx-trend-flat {
+  background: var(--sx-cream-100);
+  color: var(--sx-ink-600);
+}
+
+/* --- Empty state icon --------------------------------------------------- */
+/* empty states: icon h-6 w-6 text-slate-400 mb-2 */
+.sx-empty-icon {
+  margin-bottom: 8px;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--sx-ink-400);
+}
+
+/* --- Deal path bar (StagePathBar) --------------------------------------- */
+/* deal-path-bar.tsx: mt-4 flex w-full items-stretch overflow-x-auto rounded-lg border border-slate-200 bg-white */
+.sx-path {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius-lg);
+  background: var(--sx-surface);
+}
+/* step: flex-1 px-3 py-2 text-[12px] font-medium text-slate-600, border-l between steps */
+.sx-path-step {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: var(--sx-fs-12);
+  font-weight: 500;
+  color: var(--sx-ink-600);
+  white-space: nowrap;
+}
+.sx-path-step + .sx-path-step {
+  border-left: 1px solid var(--sx-border);
+}
+/* passed stage: bg-slate-50 text-slate-500 */
+.sx-path-step.sx-path-done {
+  background: var(--sx-cream-50);
+  color: var(--sx-ink-500);
+}
+/* current stage: bg-indigo-600 text-white */
+.sx-path-step.sx-path-current {
+  background: var(--sx-maroon-600);
+  color: #ffffff;
+}
