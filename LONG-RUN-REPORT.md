@@ -299,7 +299,9 @@ Tests for you (DevTools wrappers or the UI app later; Salenix_Sales reference ne
 8. Company_Get of a deleted id → "Company not found in this tenant."
 
 
-## S7 Sales Contact actions — PLAN
+## S7 Sales Contact actions — PUBLISHED rev 12 (env_app verified, 2026-11-11 08:51 UTC)
+
+### Plan
 Source: notes/company-contact-spec.md §B (contacts/actions.ts, lib/contacts/*, lib/dedup/queries.ts:85-149). Same pattern as S6 (Sales_Context, Sales_RequirePermission, Sales_WriteActivity, Company_RefreshRollups).
 | Element | Rules |
 |---|---|
@@ -328,6 +330,9 @@ Service actions (manageDeals; sales persona scope on links and on the deal; Fore
 | Deal_ChangeStage(DealId, Stage, LostReason, HoldReason, HoldRevisitOn, HoldNote, ClearCloseDate, RollbackReasonCode, RollbackNote) | spec 2.b-2 order: hold_reason_required → needs_close_date_clear → not_found → no_change → rollback_reason_required → close_date_required → margin_required (MarginBps null) → (gates not built) → won: order_proof then approval_unavailable → lost_reason_required → write (target lead clears date; hold fields; LostReason; ClosedAt; approval none when leaving won) → G1/G2/G3 → activity stage_changed → rollups |
 Not built in S8: stage gates, offerings, custom fields, Deal_Patch, approve/reject apply, notifications (won/lost to owner), realtime, score recompute queue, agent observations.
 
-### Progress S7 (not yet published)
+### Result S7
 - Part A done (no errors): ContactMatchItem, ContactItem, Contact_FindMatches (TrigramSimilarity only, ≥ 0.55, top 5, Norm ≥ 3 chars), Contact_FindSimilar, Contact_Create (email uniqueness hard block always), Contact_Update (no email check; NormalizedName recomputed; owner_changed + notification; rollups old/new company).
-- Mentor report shows `Sales_RequirePermission("manageContacts", RoleCode)` → possible swapped arguments; part B first verifies/fixes the mapping.
+- Permission arguments verified (RoleCode = Sales_Context.RoleCode, PermissionCode = "manageContacts" in all three) — the report text was only written in the other order; nothing changed.
+- Part B done: Contact_SoftDelete, Contact_Restore, Contact_Get, Contact_List (Search on first/last/email/title, CompanyId, NoCompany, scope, OwnerFilter, CreatedAt desc + Id; deleted list by DeletedAt).
+Open: OwnerName empty (UserProfile reference); no email re-check on update/restore (source).
+Tests for you: 1. Contact_Create("Ravi", "Kumar", "Ravi@Acme.com", "", "", <Acme id>, null) → (True, ok); Acme ContactCount 1. 2. Same email in other case → (False, duplicate_email "A contact with this email already exists: Ravi Kumar."). 3. Contact_Create("", "", "", …) → (False, validation, "Provide a first name, last name, or email."). 4. CompanyId of another workspace / deleted company → company_invalid. 5. Contact_FindSimilar("Ravi", "Kumaar", "") with DedupEnabled → fuzzy match ≥ 0.55; flag off → empty. 6. Contact_Update moving the contact to another company → both companies' ContactCount refreshed. 7. Contact_SoftDelete as member → permission denied (deleteContacts); as admin → ok, ContactCount −1; Contact_Restore → +1. 8. Contact_List(Search "kum") finds Ravi; as member only own + unassigned.
