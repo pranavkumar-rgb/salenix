@@ -1,0 +1,31 @@
+# Source project (cloned separately: git clone --depth 1 https://github.com/prajjwalrawat-cgb/crm-tool source)
+source/
+
+# .NET build output and package
+bin/
+obj/
+dist/
+*.user
+.vs/
+TestResults/
+
+# Secrets (never commit; secret Settings live only in the ODC Portal)
+.env
+.env.*
+*.env
+secrets.*
+*.secret
+*.secrets.json
+appsettings.*.json
+*.pfx
+*.p12
+*.pem
+*.key
+*.snk
+.claude/settings.local.json
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/

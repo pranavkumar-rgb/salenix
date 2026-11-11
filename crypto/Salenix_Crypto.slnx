@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Salenix_Crypto.Tests/Salenix_Crypto.Tests.csproj" />
+  <Project Path="Salenix_Crypto/Salenix_Crypto.csproj" />
+</Solution>

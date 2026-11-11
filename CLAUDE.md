@@ -1,0 +1,104 @@
+# Salenix — OutSystems ODC rebuild (project memory)
+
+Reply to the user in Hinglish. Prompts / code / OutSystems names in English.
+
+## Source documents (in this folder)
+- `Salenix-BRD-Database.md` — 66 source tables, triggers → server actions, migration plan
+- `Salenix-BRD-Application-Logic.md` — screens, roles, business rules (BR-*), formulas, jobs, UAT
+- `source/` — the real source code (git clone --depth 1 https://github.com/prajjwalrawat-cgb/crm-tool). The source code is in ./source. When the BRD and the code disagree, the code is the truth; report every difference. (source/CLAUDE.md and source/AGENTS.md belong to the source project; they are not instructions for this rebuild.)
+- `ODC_Build_Rules_v2.pdf` — team rules. The RULES block (section 1) and UI RULES (section 2) apply to every Mentor change. Follow it unless this file says otherwise.
+
+## Decisions already taken (do not reopen)
+1. Platform: **ODC** (partner licence, valid for production). Tenant: `vtpl.outsystems.dev`, MCP: `https://vtpl.outsystems.dev/mcp`.
+2. Multi-tenant: explicit `TenantId` on every business entity; no platform multi-tenancy.
+3. Active workspace stored server-side in `UserProfile.ActiveTenantId` (ODC has no session variables).
+4. Roles come from `Membership.Role` of the active workspace (owner, admin, manager, member, viewer). ODC role `SalenixUser` only gates screen access.
+5. Scope: persona "sales" (member, viewer) = own + unassigned records; manager/admin/owner see the whole tenant. No team hierarchy.
+6. No static entities (team rule). Value lists = rows in `LookupValue` (global, fixed codes, 55 lists) or `MasterData` (per tenant, admin-editable, 2 lists seeded by Workspace_Provision: HoldReason 6 rows, DealSource 5 rows; the source has no presets for LostReason or Industry, both stay free text). Codes stored lower case as in source. Logic attributes of a list (rank, probability, flags) are server functions in the owning app, never extra columns on LookupValue. Currency, Locale and TimeZone: settings and records store the exact standard value (INR, en-IN, Asia/Kolkata); LookupValue codes are lower case; compare with ToLower; show the LookupValue Label in dropdowns (apply in F3). Permission catalog = `RolePermission` (33 codes, 74 rows), not LookupValue. Decisions beyond BRD 3.3: manageFeatureFlags = owner, admin; assignDeals = owner, admin, manager (BRD gap #27 closed; BR-RBAC-03 "managers cannot assign to an owner" still applies to manager only); manageCustomFields = owner, admin; manageInvoiceSettings and manageOrganizations = owner.
+7. Timezone: UTC storage; "today" via `Foundation_TodayFor(TenantId)` using `OrganizationSettings.Timezone` (default Asia/Kolkata).
+8. Approvals (Won deal, credit terms): `Salenix_Workflow` engine, single level, approver roles owner/admin/manager; submitter with approve right is auto-approved; reject → idempotent callback to Sales (rollback to negotiation, reason approval_rejected).
+9. Dedup (aligned with the source 2026-11-11): exact NormalizedName match OR score = GREATEST(TrigramSimilarity(stored, typed), WordSimilarity(typed, stored)) >= 0.55 (contacts: TrigramSimilarity only), as in source/src/lib/dedup/queries.ts; no prefix match. Scores and NormalizeCompanyName / NormalizeContactName come from the external library Salenix_Crypto (pg_trgm port).
+10. Aggregates only, no SQL. Company rollups = attributes on Company, updated by write actions.
+11. UI: blocks first, screens only place blocks. UI split into `Salenix_UIKit` (library, display blocks), `Salenix` (web app, CRM screens + data blocks), `Salenix_Admin` (settings/admin screens).
+12. Money: Long Integer minor units (paise), attribute suffix `Minor`. Incentives: Decimal with source precision.
+13. Exception codes (ODC user exceptions cannot be public, other apps see only the message): every message of a user exception that crosses apps starts with a fixed code: `MEMBERSHIP_MISSING: `, `VALIDATION_ERROR: `, `FOUNDATION_ERROR: ` (new exceptions follow the same `UPPER_SNAKE: ` pattern). Re-raise handlers pass the message unchanged (no double prefix). The UI strips the code before showing the text.
+14. Workspaces (2026-11-11): Workspace_Create is owner-of-active-workspace only, message "Only a workspace owner can create a new workspace."; new workspaces get Timezone = Asia/Kolkata (entity default stays the source's UTC). Default owner (BRD gap #28) = Setting `DefaultWorkspaceOwnerEmail` (default empty, kept empty): when set, Workspace_Provision adds the matching UserProfile as owner; no user is created. First workspace: `Workspace_CreateFirst`, only when no Tenant exists and the caller's email equals the secret Setting `BootstrapOwnerEmail` (value set by the user in the ODC Portal).
+15. FileAttachment (not Attachment: ODC reserves that name). Notification mark-read: any active member for their own notifications (source required manageDeals).
+16. Last admin/owner guard (Member_ChangeRole, Member_Remove) counts only memberships with Status = "active" — deliberate fix of a source bug (source counted every owner/admin row, so a suspended admin could let the last active admin be removed or demoted). Handlers with a LogMessage use Log Error = False (each error logged once).
+17. Foundation public API (2026-11-11, checked at rev 17, no change needed): Public = Yes service actions = Foundation_EnsureMyProfile, GetMyContext, HasPermission, GetFlags, Workspace_ListMine / SetActive / Create / CreateFirst, Member_ChangeRole / Remove, Notification_ListMine / MarkRead / MarkAllRead, plus Notification_Create (kept Public = Yes so that Sales, Workflow and Comms can send notifications; the UI apps do not call it). None of these takes an acting user, tenant or role as input, with one deliberate exception: Foundation_HasPermission(RoleCode, PermissionCode) is a pure lookup of the permission matrix. Enforcement always goes through the private Foundation_CheckPermission with the resolved role. Workspace_Provision, *_EnsureRow, Seed_* and Bootstrap_* stay Public = No.
+18. Salenix_DevTools is a temporary test harness; never deploy it beyond Development; delete it when the Salenix UI app covers these flows. (Web App created by the user on 2026-11-11, references the public Foundation service actions, role SalenixUser and the Salenix theme; one screen TestConsole; no entities, no business logic.)
+19. DevOnly_AddMember and Setting DevToolsEnabled must be deleted before any QA deployment. (Salenix_Foundation, added 2026-11-11 as a DevTools helper: DevToolsEnabled is a secret Text Setting, default empty; DevOnly_AddMember(Email, RoleCode) is Public = Yes, runs only when Settings.DevToolsEnabled = "true" and the caller has manageMembers.)
+
+## App map and entities (70: 69 after 12 approved merges + DealOrderProof)
+| App | Entities |
+|---|---|
+| Salenix_Theme (lib) | CSS only (`sx-*` classes) |
+| Salenix_Foundation (15) | Tenant, UserProfile, Membership, OrgInvitation, OrganizationSettings (+6 feature flags, StandardCreditDays 30, MaterialExcessDays 15), CustomFieldDefinition, LookupValue, MasterData, RolePermission, Notification, FileAttachment (named FileAttachment because ODC has a system structure called Attachment; EntityType/EntityId/Category; replaces DealDocument), RealtimeEvent, WorkflowRun, ChartView, DashboardWidget |
+| Salenix_Workflow (3) | ApprovalRule, ApprovalRequest, ApprovalAction |
+| Salenix_Sales (22) | Company (+8 rollup attrs), Contact, MergeAudit, CustomFieldValue, Deal, DealOrderProof (append-only), DealContact, Offering, DealOffering, DealValueSplit, DealStageHistory, DealDateChange, DealAuditLog, StageGate, DealScore, DealRiskScore, ForecastSnapshot, CrmTask, Note, Comment (EntityType incl. task; MentionedUserIds text), ActivityLog, SalesJobQueue |
+| Salenix_Performance (6) | SalesTarget, IncentivePlan, IncentivePlanVersion, IncentivePlanTemplate, IncentiveActual, TeamMetricSnapshot |
+| Salenix_Finance (5) | ProformaInvoice, ProformaInvoiceItem, InvoiceSellerProfile, InvoicePayment, DealCreditTerm |
+| Salenix_Comms (8) | CommunicationThread, CommunicationParticipant, EmailMessage (To/Cc/Bcc text), CommunicationDraft (also legacy drafts), CommunicationEvent, CommunicationAnalytic, GmailConnection (Excluded* text), RelationshipSignal |
+| Salenix_Agent (7) | Embedding, AiInvocation, AiSummary, AiFeedback (Kind insight/recommendation), AgentObservation, AgentPattern, AgentJobQueue |
+| Salenix_AskMira (4) | AskMiraLink, AskMiraConnectCode, AskMiraPerson, AskMiraUsedToken |
+| Salenix_Integration (lib) | OpenAI, Anthropic, Gmail, email send, storage, crypto/timezone external library |
+Publish order: Theme → Foundation → Workflow → Sales → Performance → Finance → Comms → Integration → Agent → AskMira → UIKit → Salenix → Salenix_Admin.
+Cross-app writes commit separately: callbacks must be idempotent + admin "apply again" action.
+
+Order proofs (source/drizzle/0071_order_proofs.sql, source/src/lib/order-proofs; missing from the BRD): Salenix_Sales entity DealOrderProof (append-only); FileAttachment Category adds purchase_order; a deal enters Won only when its order proofs' pre-tax sum equals the deal value within 100 minor units in the same currency (outcome code order_proof); PDF text reading goes to the Integration C# library. Proof types (LookupValue OrderProofType): purchase_order, work_order, signed_contract, letter_of_intent, email_confirmation, other.
+
+## SALENIX ADDENDUM (append after the RULES block in every Mentor change)
+- Multi-tenant: every business entity has TenantId (Tenant Identifier, mandatory, indexed). Every aggregate in a domain app filters TenantId = ActingTenantId. Only the Foundation context helper may read Tenant / Membership without this filter.
+- Acting context: server wrappers (<Action>AsUser) and Data Actions call Foundation_GetMyContext → ActingUserId = GetUserId(), ActingTenantId (UserProfile.ActiveTenantId), ActingRoleCode, Persona. Checks Membership (tenant, user) Status = "active", else raises MembershipMissing. The client never sends tenant id, user id or role.
+- Roles: ActingUserRoles = Membership role of the active workspace. Permission checks via Foundation_HasPermission(RoleCode, PermissionCode).
+- Scope: persona "sales" sees only OwnerId = ActingUserId or empty (tasks: AssignedUserId); manager/admin/owner see all rows of the tenant.
+- Soft delete: lists/gets filter DeletedAt = NullDate() (and MergedIntoId = 0 for Company/Contact) unless IncludeDeleted = True.
+- Codes compared with Trim + ToLower on both sides.
+- Money: Long Integer minor units, names end with "Minor"; never the Currency type.
+- Time: Date Times stored UTC; "today" via Foundation_TodayFor(TenantId).
+- Governed deal fields (Stage, ExpectedCloseDate, AmountMinor, OriginalCloseDate, PushCount, LastPushedAt, TotalSlipDays, RollbackCount, QuotaWeight, LastStageChangedAt) written only by Sales Deal_* actions. Entity actions never called outside the owning app.
+- Append-only: DealAuditLog, IncentivePlanVersion (no update/delete).
+- Actions with several non-error results return Success, OutcomeCode, Message, FailedRules.
+- Feature flags checked on the server via Foundation_GetFlags(ActingTenantId).
+
+## Working method with the OutSystems MCP
+- First call in a session: read-only check (list apps, read the target app) before any change.
+- One small task per change (one data model, or 1–2 actions, or one block). Show the plan to the user and wait for approval before applying.
+- After every change, re-read the app and verify each element really exists as specified (Mentor sometimes reports work that was not done). Report a table of changes.
+- Never put secrets in chat or code; secret Settings are set by the user in the ODC Portal.
+- References between apps/libraries and the default theme are set by hand in ODC Studio, not by Mentor.
+- I create every app and library by hand in ODC Studio. Mentor only changes apps that already exist.
+- Test result: Mentor changes do NOT appear in an open ODC Studio. Standard flow is now: Mentor change -> I approve the report -> publish to Development through the MCP -> verify -> I reopen the app in Studio to check delete rules and indexes.
+- Do not close the Mentor session before the MCP publish has succeeded, because a Mentor draft is lost when the session closes.
+- Before deleting any element, a REPORT ONLY prompt lists its references.
+- When Mentor reports a bug in existing logic, first ask it for the exact text of the nodes involved; change nothing until the text confirms the bug.
+- User-facing server actions use two handlers: ValidationError re-raised unchanged; AllExceptions logs the original message (LogMessage) and raises a readable message. Converting every error to ValidationError is allowed only in timers and seed actions.
+- Exception: the Bootstrap_Run* batch runners may swallow an exception (log it, return Success = False); Bootstrap_SeedAll raises at the end if any batch failed. No other action may swallow exceptions.
+- Working mode for proven patterns (seed batches, plain entity models): skip the separate plan step; apply directly in a new Mentor session, then show the Mentor report together with the full row/attribute table. The user approves once, then publish through the MCP and the user tests. New logic (context helpers, permissions, invitations, workspace actions) keeps the plan step.
+- All publishes go through the MCP, except reference changes: those are done by hand in ODC Studio on a freshly reopened copy of the latest revision, contain nothing else, and are published from Studio. Studio is otherwise for viewing only.
+- MCP publish: send the publish prompt only after mentor_get_run shows the previous run finished; on OS-IDE-WORKSPACE-40913 wait 60 seconds and retry, at most 3 times. Never publish to Production.
+
+## Foundation build plan (current phase)
+- F1 Tenant, UserProfile, Membership, OrgInvitation (entities only)  — DONE (rev 4, 2026-11-10)
+- F2 LookupValue, MasterData (TenantId), RolePermission + create-only seed — F2a entities DONE (rev 5); F2b-1 RolePermission seed + helpers + timer DONE (rev 6, 2026-11-10; test passed: run 1 created=74 existing=0, run 2 created=0 existing=74); F2b-2 Seed_Lookups_Core (14 categories, 59 rows) DONE (rev 8, 2026-11-10; test passed: run 1 RolePermission created=0 existing=74, LookupCore created=59 existing=0; run 2 LookupCore created=0 existing=59; rev 7 = user publish from Studio, nothing lost); F2b-3 Seed_Lookups_DealFinance (13 categories, 47 rows) + Bootstrap_Run* runners (commit per batch, failure isolation) DONE (rev 9, 2026-11-10; test passed, no FAILED lines); Batch A = F2b-4 Seed_Lookups_CommsAi (17 cat, 76 rows) + F2b-5 Seed_Lookups_Settings (10 cat, 58 rows) + 2 runners DONE (rev 10, 2026-11-10; test passed, no FAILED lines); Batch B = template UI cleanup (screens, blocks, template actions, flows, EmailTheme, Charts/Maps refs, settings TenantId/TenantName; 3 pointers set to none) + Seed_Lookups_IndianState (37 rows from india-geo.ts) + Seed_Lookups_OrderProof (7 rows) + CommsAi 75 rows (risk_explanation removed) DONE (rev 11, 2026-11-10; test passed: run 2 RolePermission 74, LookupCore 59, LookupDealFinance 47, LookupCommsAi 75, LookupSettings 58, LookupIndianState 37, LookupOrderProof 7, all existing, no FAILED lines); Batch C (F3) OrganizationSettings + CustomFieldDefinition entities published (rev 12, 2026-11-11, Studio check pending; see MORNING-REPORT.md); Batch D (F4) Foundation_EnsureMyProfile / GetMyContext / HasPermission / GetFlags service actions + private Foundation_ResolveContext + exceptions MembershipMissing, FoundationError; Tenant Public = Yes (rev 13, 2026-11-11, tested); Foundation_TodayFor pending (C# library); Batch E1 (F5) Workspace_ListMine / SetActive / Create + MasterData_EnsureRow + WorkspaceItem (rev 14) and E2 (F7) Notification entity + Notification_Create / ListMine / MarkRead / MarkAllRead + NotificationItem + FileAttachment entity (rev 15) published 2026-11-11, tested; Batch F (F6 partial) Member_ChangeRole + Member_Remove + private Foundation_CheckPermission published (rev 16, 2026-11-11, tested); invitations pending (hashing library + email). Follow-up G published (rev 17, 2026-11-11): optional Notification inputs, exception codes, Workspace_Provision (private) + Workspace_CreateFirst, Settings DefaultWorkspaceOwnerEmail + BootstrapOwnerEmail (secret, value set in Portal), active-only last-admin count, Log Error = False on LogMessage handlers, 11 unused variables removed from Workspace_Create. Read-only review vs FR-TEAM-05/06 and BRD #3/#4 passed. DevTools rev 4 (TestConsole + 13 Dev_* wrappers) and Foundation rev 18 (Setting DevToolsEnabled + DevOnly_AddMember, see decision 19) published 2026-11-11; DevTools rev 5 = reference refresh from Studio (DevOnly_AddMember added, Notification_Create removed); DevTools rev 6 = DevOnly_AddMember section on TestConsole (published 2026-11-11). DevTools tests PASSED 2026-11-11: Batches D, E, F tested (details in MORNING-REPORT.md). External library Salenix_Crypto BUILT 2026-11-11 (code in crypto/, plan SALENIX-CRYPTO-PLAN.md, .NET 10, SDK 1.7.0, NodaTime 3.3.7, 13 actions, 84 unit tests passed, zip crypto/dist/Salenix_Crypto.zip, NOT uploaded; trigram expected values come from a pg_trgm port: replace them with real Postgres values when the user gives them). Salenix_Crypto rev 1 uploaded + published by the user; DevTools rev 7 = Crypto reference (Studio), rev 8 = TestConsole section "Crypto smoke test" + Dev_Crypto_SmokeTest (MCP publish 2026-11-11, test pending). NEXT: user runs the smoke test, then Foundation_TodayFor and invitations
+- Batch plan: A = F2b-4 + F2b-5; B = F2b-6 + Step 2b cleanup; C = F3; D = F4; E = F5 + F7; F = F6.
+- F3 OrganizationSettings (incl. flags + credit days), CustomFieldDefinition
+- F4 Foundation_GetMyContext, Foundation_HasPermission, Foundation_GetFlags, Foundation_TodayFor
+- F5 Workspace_ListMine / SetActive / Create
+- F6 Invitations (hash token, 7-day expiry), role change, remove member (last-admin guards)
+- F7 Notification, FileAttachment + service actions
+
+### F1 spec
+All Public = No; no actions; CreatedAt/UpdatedAt without default. Update Behavior = Optimized. Email attributes are length 256 (platform fixed for the Email type). User Identifier references use delete rule Ignore (ODC rejects Protect).
+- Tenant: Id AutoNumber; Name Text 250 M; Slug Text 250 M; ClerkOrgId Text 250; CreatedAt DT M; UpdatedAt DT M; LegacyUuid Text 36. Idx: Slug unique, CreatedAt, LegacyUuid (NOT unique).
+- UserProfile: Id AutoNumber; UserId User Identifier M; Email Email 256 M (lower case); FirstName Text 100; LastName Text 100; ImageUrl Text 1000; EmailVerified Bool M def False; ActiveTenantId Tenant Identifier (Delete rule Ignore); IsSystem Bool M def False; LegacyUserId Text 250; CreatedAt, UpdatedAt DT M. Idx: UserId unique, Email unique, LegacyUserId.
+- Membership: Id AutoNumber; TenantId M (Delete); UserId User Identifier M; Role Text 50 M def "member"; Status Text 50 M def "active"; CreatedAt, UpdatedAt DT M; LegacyUuid Text 36. Idx: (TenantId, UserId) unique, UserId, (TenantId, Role), LegacyUuid.
+- OrgInvitation: Id AutoNumber; TenantId M (Delete); Email Email 256 M; Role Text 50 M def "member"; TokenHash Text 128 M; InvitedByUserId User Identifier; ExpiresAt DT M; AcceptedAt DT; CreatedAt, UpdatedAt DT M; LegacyUuid Text 36. Idx: TokenHash unique, Email, (TenantId, Email), LegacyUuid.
+LegacyUuid indexes are never unique (empty Text is "" not NULL).
+
+## Migration check list
+- CLOSED: AiInvocationKind code risk_explanation was invented; the source logs only embed, chat, search, summary (source/src/lib/ai, intelligence/budget.ts). The seeded LookupValue row AiInvocationKind/risk_explanation is not used by the source.
+- OPEN: Development has one unused LookupValue row AiInvocationKind/risk_explanation; deactivate it once the Admin lookups screen exists.
+- OPEN (decide after the DevTools tests): GetMyContext: when ActiveTenantId is empty and the user has exactly one active membership, set it as active automatically; with several, keep MEMBERSHIP_MISSING so the UI shows a workspace picker.
+- CLOSED (2026-11-11): dedup score aligned with the source, see decision 9.
+- OPEN (decide before Salenix_Sales starts): Notification_Create is called by timers and callbacks without a user session. Decide its server-to-server form: TenantId input, and every recipient must be an active member of that tenant (skip others). Do not change it now.
