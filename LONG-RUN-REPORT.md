@@ -434,3 +434,28 @@ Pending (not built): indexes Deal (TenantId, HealthBand), Deal (TenantId, PushCo
 Validation: 0 errors.
 Deal_Update choice approved (CLAUDE.md 21i). Pending UI "Revisit due list" (21j).
 Tests X3: 1. Deal_Create(Stage "hold", no HoldReason) → hold_reason_required; HoldRevisitOn yesterday → hold_revisit_past; today → ok. 2. Deal_ChangeStage(id, "hold", "timing", yesterday) → hold_revisit_past. 3. Deal_Update of a Hold deal with an empty HoldReason input → ok (stored reason kept); new HoldRevisitOn yesterday → hold_revisit_past; unchanged overdue date → ok. 4. Contact_Update setting the email of another active contact → duplicate_email. 5. Delete contact A, create B with A's email, Contact_Restore(A) → duplicate_email.
+
+## Studio reference changes (manual, reference-only publishes)
+**1. Salenix_Sales (fresh copy of rev 14) → Manage Dependencies → Salenix_Foundation (rev 25)** — keep everything already referenced, add:
+- Service actions: Approval_Submit, Approval_Decide, Approval_Cancel, Approval_Get, Approval_ListPending, Member_GetRole
+- Structures: ApprovalItem, ApprovalActionItem
+- Entity: UserProfile (read-only)
+Publish from Studio (reference change only). The global exception handler property is left for S10 (Mentor first; Studio only if Mentor still cannot clear it).
+
+**2. Salenix_DevTools (fresh copy of rev 8) → Manage Dependencies**
+- Salenix_Foundation (rev 25): Invitation_Create, Invitation_ListPending, Invitation_Revoke, Invitation_GetByToken, Invitation_Accept, InvitationItem; Approval_Submit, Approval_Decide, Approval_Cancel, Approval_Get, Approval_ListPending, ApprovalItem, ApprovalActionItem; Member_GetRole; Foundation_TodayFor, Foundation_NowFor (keep the existing ones).
+- Salenix_Sales (rev 14, after step 1 its revision will be 15): Sales_StageSelfCheck; Company_FindSimilar, Company_Create, Company_Update, Company_SoftDelete, Company_Restore, Company_Get, Company_List, CompanyItem, CompanyMatchItem; Contact_FindSimilar, Contact_Create, Contact_Update, Contact_SoftDelete, Contact_Restore, Contact_Get, Contact_List, ContactItem, ContactMatchItem; Deal_Create, Deal_Update, Deal_ChangeStage.
+Publish from Studio (reference change only).
+
+## DevTools test sections (TestConsole, one Dev_* server wrapper per call, outputs shown raw + last error text)
+| Section | Calls | Covers |
+|---|---|---|
+| T1 Time | TodayFor / NowFor (active workspace) | H1 |
+| T2 Invitations | Create (Email, Role) → AcceptLink; ListPending table; Revoke(Id); GetByToken(Token); Accept(Token) | H2, X2 tests |
+| T3 Members | Member_GetRole(TargetUserId text) | X2 |
+| T4 Approvals | Submit(SubjectType, SubjectId, Label); ListPending table; Decide(RequestId, Decision, Reason); Cancel(SubjectType, SubjectId); Get(RequestId) + actions table | W2 tests |
+| T5 Stage self-check | Sales_StageSelfCheck → Passed, FailedCount, Report | S5 |
+| T6 Companies | FindSimilar; Create (Name, Domain, Industry, Owner, DedupOverride) → outcome + matches table; Update; SoftDelete; Restore; Get; List (Search, OwnerFilter, IncludeDeleted, SortBy, SortDesc, page) | S6 |
+| T7 Contacts | same set for contacts (+ CompanyId, NoCompany filters) | S7, X3 |
+| T8 Deals | Create (all fields); ChangeStage (Stage, LostReason, HoldReason, HoldRevisitOn, ClearCloseDate, RollbackReasonCode/Note); Update (all fields + RollbackReason + CloseDateReason) → Success/OutcomeCode/Message/FailedRules | S8, S9 (UAT 1–7, 15), X3 |
+Gaps for full S9 verification (proposed for S10, read-only): **Deal_Get** (DealItem incl. governed fields PushCount, TotalSlipDays, OriginalCloseDate, QuotaWeight, RollbackCount, ApprovalStatus, ForecastCategory, ClosedAt, Hold*) and **Deal_GetHistory** (DealAuditLog, DealDateChange, DealStageHistory rows) — without them DevTools can only see outcome codes. UAT 8/10 success paths also need an order-proof add action (DealOrderProof + FileAttachment), not built yet.
