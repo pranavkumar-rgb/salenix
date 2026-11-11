@@ -405,7 +405,7 @@ Mentor listed every index of every entity in Salenix_Foundation (rev 24) and Sal
 Missing or wrong: **none**. Optional (not in our specs, present in the source): Deal (TenantId, HealthBand); Deal (TenantId, PushCount/RollbackCount/QuotaWeight) — source partial indexes; ActivityLog LegacyUuid and LegacyUuid on child tables (DealAuditLog, DealDateChange, DealStageHistory, DealScore, DealRiskScore, ForecastSnapshot, DealContact, DealOffering, DealValueSplit, DealOrderProof) — only needed if the migration looks children up by LegacyUuid. Not added unless you ask.
 Platform: no automatic index on cross-app references (TenantId in Sales, User Identifier anywhere) — our explicit (TenantId, …) indexes cover the queries.
 
-## X2 Foundation — APPLIED in Mentor session 1067f005 (NOT published, waiting for approval)
+## X2 Foundation — PUBLISHED rev 25 (env_app verified, 2026-11-11 09:25 UTC)
 | Element | Old → New |
 |---|---|
 | Foundation_EnsureProfileCore (new, private) | profile logic moved here unchanged (sign-in check → MEMBERSHIP_MISSING "You are not signed in."; existing profile → Created False; else User email/username lower-trim, name split, 100-char truncation, CreateUserProfile → Created True); new output ProfileId; AllExceptions re-raises FoundationError with the original message |
@@ -416,3 +416,6 @@ Platform: no automatic index on cross-app references (TenantId in Sales, User Id
 | Tenant | + DeletedAt (Date Time, optional, no index) |
 | Member_GetRole (new, public service) | ResolveContext; Membership of the acting tenant for TargetUserId → IsMember, RoleCode, Status (lower-case); handlers as Member_Remove |
 Indexes: none missing (X1). Validation: 0 errors.
+Invitation_Accept handler check (after review): OnValidationError / OnMembershipMissing re-raise unchanged; AllExceptions (Log Error = False) logs the original and raises "FOUNDATION_ERROR: Something went wrong. Please try again." — a FoundationError from EnsureProfileCore already ends there, so no change was needed (my earlier remark that the original message would reach the caller was wrong).
+Pending (not built, recorded): indexes Deal (TenantId, HealthBand) and Deal (TenantId, PushCount/RollbackCount/QuotaWeight) for the At-risk list and reports.
+Tests X2: 1. Foundation_EnsureMyProfile for a new user → Created True, then False. 2. Invitation_Create → AcceptLink "https://vtpl-dev.outsystems.app/Salenix/AcceptInvite?token=…". 3. Invitation_Accept for a user without a profile → profile created, membership active. 4. Member_GetRole(member id) → IsMember True, RoleCode member, Status active; a user of another workspace → IsMember False.
