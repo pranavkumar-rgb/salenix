@@ -386,3 +386,21 @@ Every publish: revision checked before, env_app verified after, Mentor session c
 4. Then tell me to wire: Won approval (replace the approval_unavailable branches), manager/owner assignment check, OwnerName.
 5. **DevTools:** reference refresh (Foundation rev 24 + Salenix_Sales) and Dev_* wrappers for Invitation_*, Approval_*, Company_*, Contact_*, Deal_*, Sales_StageSelfCheck — then run the tests in each batch section (H1, H2, W2, S5–S9).
 6. `git push` (commits are local only).
+
+---
+# Follow-up after review (2026-11-11)
+
+## X1 READ-ONLY index audit — DONE (no change)
+Mentor listed every index of every entity in Salenix_Foundation (rev 24) and Salenix_Sales (rev 13); compared with CLAUDE.md F1 spec, MORNING-REPORT.md (F2/F3/E2) and the W1/F8/S1–S4 plans.
+| App | Entity | Expected (spec) | Found | Status |
+|---|---|---|---|---|
+| Foundation | Tenant | Slug unique; CreatedAt; LegacyUuid | all 3 | OK |
+| Foundation | UserProfile | UserId unique; Email unique; LegacyUserId | all 3 | OK |
+| Foundation | Membership | (TenantId, UserId) unique; UserId; (TenantId, Role); LegacyUuid | all 4 + auto TenantId | OK |
+| Foundation | OrgInvitation | TokenHash unique; Email; (TenantId, Email); LegacyUuid | all 4 + auto TenantId | OK — **the H2 note "no indexes" was a wrong Mentor statement; corrected here** |
+| Foundation | LookupValue / MasterData / RolePermission | uniques (Category, Code) / (TenantId, Type, Code) / (RoleCode, PermissionCode) | present (+ sort indexes) | OK |
+| Foundation | OrganizationSettings, CustomFieldDefinition, Notification, FileAttachment | MORNING-REPORT specs | all present | OK |
+| Foundation | ApprovalRule/Request/Action, RealtimeEvent, WorkflowRun, ChartView, DashboardWidget | W1/F8 plans | all present | OK |
+| Sales | all 22 entities | S1–S4 plans | all present (uniques: CustomFieldValue, DealContact, Offering, DealOffering, DealValueSplit, DealRiskScore, StageGate) | OK |
+Missing or wrong: **none**. Optional (not in our specs, present in the source): Deal (TenantId, HealthBand); Deal (TenantId, PushCount/RollbackCount/QuotaWeight) — source partial indexes; ActivityLog LegacyUuid and LegacyUuid on child tables (DealAuditLog, DealDateChange, DealStageHistory, DealScore, DealRiskScore, ForecastSnapshot, DealContact, DealOffering, DealValueSplit, DealOrderProof) — only needed if the migration looks children up by LegacyUuid. Not added unless you ask.
+Platform: no automatic index on cross-app references (TenantId in Sales, User Identifier anywhere) — our explicit (TenantId, …) indexes cover the queries.
