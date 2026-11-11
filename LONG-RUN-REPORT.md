@@ -420,7 +420,7 @@ Invitation_Accept handler check (after review): OnValidationError / OnMembership
 Pending (not built, recorded): indexes Deal (TenantId, HealthBand) and Deal (TenantId, PushCount/RollbackCount/QuotaWeight) for the At-risk list and reports.
 Tests X2: 1. Foundation_EnsureMyProfile for a new user → Created True, then False. 2. Invitation_Create → AcceptLink "https://vtpl-dev.outsystems.app/Salenix/AcceptInvite?token=…". 3. Invitation_Accept for a user without a profile → profile created, membership active. 4. Member_GetRole(member id) → IsMember True, RoleCode member, Status active; a user of another workspace → IsMember False.
 
-## X3 Sales — APPLIED in Mentor session e1804d96 (NOT published, waiting for approval)
+## X3 Sales — PUBLISHED rev 14 (env_app verified, 2026-11-11 09:30 UTC)
 | Element | Change |
 |---|---|
 | Deal_Create | after lost_reason_required: if hold → Foundation_TodayFor; reason or revisit empty → hold_reason_required "Moving to Hold needs a reason and a revisit date."; revisit < today → hold_revisit_past "The revisit date must be today or later." |
@@ -432,3 +432,5 @@ Tests X2: 1. Foundation_EnsureMyProfile for a new user → Created True, then Fa
 Choices D7/D16/D19 (follow the source, no BRD rule): D7 a deal created without owner stays unassigned (also by members); D16 stall flag not built yet (when built, Hold counts as active, as in the source); D19 Deal_Update writes MarginBps from the input (0 = empty), so a full save at Lead/Hold/Lost with an empty margin clears it, as in the source.
 Pending (not built): indexes Deal (TenantId, HealthBand), Deal (TenantId, PushCount/RollbackCount/QuotaWeight) for the At-risk list and reports.
 Validation: 0 errors.
+Deal_Update choice approved (CLAUDE.md 21i). Pending UI "Revisit due list" (21j).
+Tests X3: 1. Deal_Create(Stage "hold", no HoldReason) → hold_reason_required; HoldRevisitOn yesterday → hold_revisit_past; today → ok. 2. Deal_ChangeStage(id, "hold", "timing", yesterday) → hold_revisit_past. 3. Deal_Update of a Hold deal with an empty HoldReason input → ok (stored reason kept); new HoldRevisitOn yesterday → hold_revisit_past; unchanged overdue date → ok. 4. Contact_Update setting the email of another active contact → duplicate_email. 5. Delete contact A, create B with A's email, Contact_Restore(A) → duplicate_email.

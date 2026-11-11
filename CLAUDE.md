@@ -37,6 +37,8 @@ Reply to the user in Hinglish. Prompts / code / OutSystems names in English.
    e) Private Foundation_EnsureProfileCore is shared by Foundation_EnsureMyProfile and Invitation_Accept (behaviour unchanged).
    f) Contact email uniqueness is checked on create, update and restore (source: create only).
    g) Invitation AcceptLink = Settings.AppBaseUrl + "/AcceptInvite?token=" + Token (ODC screen URL). AppBaseUrl (Development) = https://vtpl-dev.outsystems.app/Salenix (set by the user).
+   i) Deal_Update: the HoldRevisitOn today-or-later check applies only when a new HoldRevisitOn is given (≠ stored); an existing overdue revisit date does not block other edits (approved 2026-11-11).
+   j) PENDING UI: "Revisit due list" = Hold deals with HoldRevisitOn before today (workspace date). PENDING indexes: Deal (TenantId, HealthBand), Deal (TenantId, PushCount/RollbackCount/QuotaWeight) for the At-risk list and reports.
    h) UserProfile Public = Yes (read-only for other apps); Membership stays Public = No; role lookups from other apps go through Member_GetRole(TargetUserId) (acting tenant only).
 
 ## App map and entities (70: 69 after 12 approved merges + DealOrderProof; app merges 2026-11-11)
