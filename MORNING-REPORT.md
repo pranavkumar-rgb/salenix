@@ -1,3 +1,52 @@
+# Morning report — Salenix UI app for the 10 AM demo (run 2026-11-11 night)
+
+## What is live
+**App:** https://vtpl-dev.outsystems.app/Salenix — **Salenix rev 13** (Development, env_app verified 2026-11-11 19:55 UTC). Every batch A0–A7 was published clean (0 errors) and verified; nothing skipped, no batch failed. Sales was only read (Company_List bug check), not changed. No Studio publish, no Production, no GL_* app touched.
+
+| Batch | Screens | Rev |
+|---|---|---|
+| A0 | Template cleanup, Login (role SalenixUser, then EnsureMyProfile + GetMyContext → Home or Workspaces), shell MainLayout (rail menu, workspace switcher, notifications drawer, log out), Workspaces | 5 |
+| A1 | Home dashboard (6 KPIs, pipeline by stage bars, top 5 open deals, recently updated) | 6 |
+| A2 | Deals list (search, stage, owner, approval, include closed, sort, paging) + Pipeline board (5 open stages, "Move stage…" on every card → stage drawer with hold / lost / rollback reasons) | 7 |
+| A3 | Deal detail (path bar, approve/reject, KPIs, details, governance, order proofs add/remove, stage history, date changes, audit log) + deal create/edit form | 8, 9 |
+| A4 | Companies list / detail / form with duplicate warning, soft delete + restore | 10 |
+| A5 | Contacts list / detail / form with duplicate warning, soft delete + restore | 11 |
+| A6 | Approvals (Won deals pending approval, approve / reject with reason) | 12 |
+| A7 | Fixes from the read-back smoke test (edit of Lost deals, form load errors, full reload after workspace switch, date guards) | 13 |
+Details, source file per screen and deviations: LONG-RUN-REPORT.md, section "Run 2026-11-11 night 2".
+
+## Before the demo (5 minutes)
+1. Log in at the URL above as the workspace owner; the active workspace must be **CGB India** (TenantId 3). If you land on Workspaces, click **Open** on CGB India.
+2. Click through Home, Deals, Pipeline, Companies, Contacts, Approvals once. Nothing was seen in a browser yet (the MCP cannot render screens) — if a page looks wrong, tell me the screen and I fix it before 10.
+3. Optional: Workspace flag **DedupEnabled** must be on to show the duplicate warning (DevTools T0 Flags → tick DedupEnabled → Save).
+
+## 10-minute demo click path (demo data in CGB India)
+1. **Home (1 min)** — KPI row: open pipeline, 23 open deals, won this month, closing in 30 days, overdue, pending approvals (≥ 1). Pipeline by stage bars. Click **[DEMO] Data centre migration** in Top open deals → deal detail.
+2. **Deal detail (2 min)** — path bar, value, close date, owner, governance card (pushes, slip days, quota weight), stage history and audit log at the bottom.
+3. **Pipeline (2 min)** — menu Pipeline: 5 columns (Lead 5, Qualified 5, Proposal 5, Negotiation 5, Hold 3) with count + value. On **[DEMO] Paint shop robotics** (Proposal) choose Move stage → Qualified: the drawer asks for a rollback reason (pick "Requirement changed") → Move deal. Card moves back; the deal's audit log shows a rollback.
+4. **Order-proof check (2 min)** — open **[DEMO] Dealer portal revamp** (Negotiation, Maruti Suzuki, ₹48,00,000). Change stage… → Won → Move deal → the drawer shows **"Attach the client's PO (or other order confirmation) before marking this deal Won."** Close the drawer, **Add PO**: Purchase order, number PO/MSIL/2026/001, PO date = today, buyer "Maruti Suzuki India Ltd", value before tax 4800000, tax 864000 → Save PO. Change stage… → Won → Move deal → success (as owner it is auto-approved; badge "Approved").
+5. **Approvals (1 min)** — menu Approvals: **[DEMO] Forging dies retrofit** (₹2,75,000, Won, pending). Click **Approve** → "Deal approved." and the list empties. (To show Reject instead: Reject → reason → Confirm reject → the deal goes back to Negotiation.)
+6. **Companies (1 min)** — open **[DEMO] Tata Steel Ltd**: KPIs from the rollups, contacts, its deals. New company → type "[DEMO] Tata Steel Ltd" → Create company → **Possible duplicates** panel (exact match) with "Open existing" / "Create anyway" (needs DedupEnabled).
+7. **Contacts + notifications (1 min)** — Contacts list with company filter; bell in the top bar opens the notifications drawer (Mark all read).
+
+## Known gaps (not built — say "next sprint")
+- No drag-and-drop on the board (Move stage dropdown instead); board shows only the 5 open stages (Won/Lost via Deals list "Include won/lost").
+- Order proofs: metadata only, no PO file upload / PDF reading; warning checks (buyer/supplier mismatch) not built (decision 22d).
+- Deal contacts: only the primary contact is shown (no DealContact list action in Sales). Contact detail has no deals list (DealListItem has no ContactId).
+- Company detail deals come from Deal_List(search = company name, 200) filtered by company id in the UI — Deal_List has no CompanyId filter (add to Sales later).
+- Hold / rollback reason and PO type lists are client copies of the source lists; Foundation has no public lookup read action yet.
+- Approvals: no "recently approved / rejected" lists, no bulk approve.
+- No visual comparison with the source pages yet (A7 was fixes only); light mode only. Login page still uses the template layout (LayoutBlank) with the Salenix theme.
+- Not in this app: tasks, notes, comments, activity, reports, invoices, settings/admin (Salenix_Admin), AcceptInvite screen, first-workspace creation UI.
+- Company_List: SortDesc bug suspected in R1 is **not real** (aggregate sorts descending; checked node text). Other Sales findings logged (PageSize only 25/50/100, no StartIndex guard).
+
+## Manual steps for you
+- `git push` (commit below is local).
+- Studio check (optional, view only): Salenix rev 13 — MainFlow screens, blocks MainLayout / StageChangeDrawer.
+- Still pending from earlier runs: DevTools T1–T8 tests (LONG-RUN-REPORT.md "Test order"); decision 19 clean-up before QA.
+
+---
+
 # Overnight run — Salenix_Foundation (2026-11-11)
 
 Start state: Salenix_Foundation rev 11 (Batch B), live in Development. Batch B marked DONE in CLAUDE.md; migration check list item for AiInvocationKind/risk_explanation added.

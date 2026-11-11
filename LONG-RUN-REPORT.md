@@ -728,3 +728,116 @@ R1 Run buttons in DevTools not built; the Salenix screens will exercise the R1 a
 - **Salenix_Foundation (rev 27):** role SalenixUser; service actions Foundation_EnsureMyProfile, Foundation_GetMyContext, Foundation_HasPermission, Foundation_GetFlags, Foundation_TodayFor, Workspace_ListMine, Workspace_SetActive, Workspace_Create, Workspace_CreateFirst, Notification_ListMine, Notification_MarkRead, Notification_MarkAllRead, Invitation_GetByToken, Invitation_Accept (AcceptInvite screen lives in Salenix, decision 21g), Member_ListOptions; structures WorkspaceItem, NotificationItem, MemberOptionItem.
 - **Salenix_Sales (rev 19):** service actions Dashboard_GetSummary; Deal_List, Deal_ListPipeline, Deal_ListPendingApproval, Deal_Get, Deal_GetHistory, Deal_Create, Deal_Update, Deal_ChangeStage, Deal_Approve, Deal_Reject, DealOrderProof_Add, DealOrderProof_Remove; Company_List, Company_Get, Company_FindSimilar, Company_Create, Company_Update, Company_SoftDelete, Company_Restore, Company_ListOptions; Contact_List, Contact_Get, Contact_FindSimilar, Contact_Create, Contact_Update, Contact_SoftDelete, Contact_Restore, Contact_ListOptions; structures DealListItem, PipelineColumn, StageTotalItem, OptionItem, DealItem, DealOrderProofItem, DealAuditItem, DealDateChangeItem, DealStageItem, CompanyItem, CompanyMatchItem, ContactItem, ContactMatchItem.
 - NOT referenced by Salenix (on purpose): Notification_Create (server-to-server), Approval_* (Sales calls them; UI uses Deal_Approve / Deal_Reject), Member_ChangeRole / Member_Remove / Invitation_Create / ListPending / Revoke / Settings_SetFlags / Member_GetRole (→ Salenix_Admin), Foundation_NowFor (server-only, never to the browser), Sales_StageSelfCheck, every DevOnly_* (decision 19), entities (UI gets structures only).
+
+---
+# Run 2026-11-11 night 2 — Salenix UI app (standing approval: publish after each clean batch)
+Pre-check: app_list — Salenix rev 4 (Studio reference publish by the user), Theme rev 5, UIKit rev 4, Foundation rev 27, Sales rev 19. Mentor session 3b7a6eb1. Read-only inventory: references present = UIKit 9 blocks + 2 functions; Foundation 30 service actions (incl. Approval_*, Invitation_*, DevOnly_AddMember — more than the list), 6 structures, role SalenixUser, entities Tenant/UserProfile/Membership (not used by the UI); Sales 33 service actions + 13 structures. OutSystemsMaps / OutSystemsCharts still referenced (not removed: no reference changes in this run).
+
+## A0 template cleanup + shell — PUBLISHED rev 5 (env_app verified, 2026-11-11 18:09 UTC)
+| Prompt | Element | Change |
+|---|---|---|
+| A0-1 | removed | screens RecoverPasswordRequest, RecoverPasswordReset, UserProfile, ChangePassword; blocks LayoutTopMenu, LayoutSideMenu, Layout, Menu, MenuIcon, UserInfo, ApplicationTitle; UI flow Emails (ChangeEmail, ResetPassword); theme EmailTheme; client + server actions SendChangeEmail, SendResetPasswordEmail, UpdateUser; client vars UserName, UserPhotoURL; image User |
+| A0-1 | kept | Login, InvalidPermissions (now LayoutBlank, "Go to login" link always shown), LayoutBlank, DoLogin, DoLogout (2 assigns to deleted client vars removed), LastURL, RedirectToURL, Logo, resources, local role Salenix, OnException |
+| A0-1 | UI_StartSession (server) | Foundation_EnsureMyProfile → Foundation_GetMyContext → HasWorkspace; AllExceptions → ErrorMessage (GetMyContext has no workspace name → WorkspaceName stays "") |
+| A0-2 | Login LoginOnClick | role check CheckSalenixRole (local role Salenix — users do not have it) → **CheckSalenixUserRole**; after login UI_StartSession → HasWorkspace ? (LastURL empty → Home, else LastURL) : Workspaces |
+| A0-2 | UI_StripCode, UI_IsMembershipMissing (client functions) | strips MEMBERSHIP_MISSING: / VALIDATION_ERROR: / SALES_ERROR: / FOUNDATION_ERROR:; empty → "Something went wrong. Please try again." |
+| A0-2 | UI_Workspace_SetActive, UI_Notification_MarkRead, UI_Notification_MarkAllRead (server wrappers) | Success + ErrorMessage |
+| A0-2 | screens Home (Default Screen), Deals, Pipeline, Companies, Contacts, Approvals, Workspaces | role SalenixUser only |
+| A0-3 | block MainLayout(ActiveItem, IsWorkspacePicker; placeholder Content) | data action GetShell: EnsureMyProfile → Workspace_ListMine (name of IsActive row) → GetMyContext (RoleCode, Persona) → Notification_ListMine(False, 20) → System User name/email; on MEMBERSHIP_MISSING → Workspaces (unless IsWorkspacePicker). UIKit AppLayout; rail: Workspace › Dashboard; Sales › Deals, Pipeline, Approvals, Companies, Contacts (sx-rail-item + sx-active); top bar: workspace dropdown (when > 1 workspace) → SetActive → Home; bell + unread StatusBadge → notifications drawer (sx-drawer: list, Mark read, Mark all read, EmptyState "You're all caught up"); user label + Log out (DoLogout → Login) |
+| A0-4 | 6 screens | MainLayout + PageHeader + EmptyState "Coming soon" (replaced by later batches) |
+| A0-4 | Workspaces | data action GetWorkspaces (EnsureMyProfile → ListMine); skeleton / sx-alert-error / EmptyState / Card flush + sx-table (Name, Role badge, Active badge or "Open" → SetActive → Home). Source: app/select-org/page.tsx |
+Source files: dashboard-shell.tsx, sidebar.tsx, header.tsx, workspace-switcher.tsx, notification-bell.tsx, user-menu.tsx.
+Deviation: data actions and UI_* wrappers catch AllExceptions and return ErrorMessage (no log; the Foundation/Sales action already logged) so each screen can show an error state — display only, nothing is swallowed silently. Notifications open as a right drawer (theme has no dropdown/popover class).
+Validation 0 errors, 1 warning (Login is public and calls UI_StartSession — expected).
+
+## A1 Home dashboard — PUBLISHED rev 6 (env_app verified, 2026-11-11 18:16 UTC)
+Source: app/dashboard/page.tsx, _components/kpi-strip.tsx, stage-conversion-bars.tsx, overview-widgets.tsx.
+| Element | Change |
+|---|---|
+| Home | data action GetSummary = Dashboard_GetSummary (outputs OpenPipelineMinor, OpenDealCount, WonThisMonthMinor, WonThisMonthCount, ClosingNext30Count, OverdueCloseCount, PendingApprovalCount, StageTotals, TopDeals, RecentlyUpdated) + MaxStageValueMinor + ErrorMessage; PageHeader "Dashboard" + "Open pipeline" link; skeleton / sx-alert-error / content: 6 KpiTiles (money compact via Money_FormatText INR), Card "Pipeline by stage" (StageBadge, count, MoneyText, OutSystemsUI ProgressBar relative to the largest stage), Card "Top open deals" (link → DealDetail, View all → Deals), Card "Recently updated"; inline EmptyStates |
+| DealDetail(DealId) | new placeholder screen (filled in A3) |
+Validation 0 errors, 2 warnings (Login public screen; unused DealId until A3).
+
+## A2 Deals list + Pipeline board — PUBLISHED rev 7 (env_app verified, 2026-11-11 18:34 UTC; Mentor session 72af0ef8)
+Source: deals/page.tsx, deals/_components/deals-view.tsx, deal-filter-bar.tsx, _components/pagination-controls.tsx; deals/board/page.tsx; hold-reason-modal.tsx, lost-reason-modal.tsx, rollback-reason-modal.tsx, clear-close-date-modal.tsx; _components/drawer.tsx.
+| Prompt | Element | Change |
+|---|---|---|
+| A2-1 | UiOption (structure), UI_StageOptions / UI_ApprovalOptions / UI_DealSortOptions / UI_HoldReasonOptions / UI_RollbackReasonOptions (client actions — ListAppend is not allowed in a Function) | option lists; hold + rollback codes/labels copied from lib/deals/hold.ts and stage-governance.ts |
+| A2-1 | UI_ApprovalTone, UI_HealthTone (Functions) | status → StatusBadge tone |
+| A2-1 | Deals | GetOwners (Member_ListOptions), GetDeals (Deal_List: Search, StageCode, OwnerUserId = TextToIdentifier(OwnerFilter), ApprovalStatus, IncludeClosed, SortBy, StartIndex, MaxRecords 25); filter bar (search + Apply/Enter, stage, owner, approval, include won/lost, sort); table Deal (→ DealDetail), Company, Stage, Value, Expected close, Owner, Approval badge, Health badge; Previous/Next pagination "Showing x–y of N"; skeleton / error / EmptyState |
+| A2-2 | UI_Deal_ChangeStage (server wrapper), UI_StageRank (Function) | Deal_ChangeStage(DealId, Stage, LostReason, HoldReason, HoldRevisitOn, HoldNote, ClearCloseDate, RollbackReasonCode, RollbackNote) |
+| A2-2 | block StageChangeDrawer(DealId, DealTitle, FromStage, ToStage; event Closed(Changed)) | sx-drawer; fields by target: lost → reason (mandatory); hold → reason dropdown + revisit date + note; backward move → rollback reason + note; lead → "clear close date" checkbox; won → PO/approval hint; Sales outcome Message + FailedRules shown in the drawer (e.g. order_proof) |
+| A2-3 | Pipeline | GetOwners, GetPipeline (Deal_ListPipeline); OutSystemsUI Gallery 5/2/1 with one UIKit Card per stage (StageBadge, count, MoneyText total), deal cards (link, company, value, close date, owner, "Move stage…" dropdown → StageChangeDrawer → refresh); "Showing 50 of N" |
+Deviations: no drag-and-drop (as asked); hold / rollback reason lists are client-side copies of the source lists (Foundation has no public lookup read action — LookupValue/MasterData not reachable from the UI; NEEDS a Foundation Lookup_List service action later); dropdown "Move stage…" shares one variable across cards (reset right after the change).
+Validation 0 errors, 2 warnings (Login public screen; unused DealDetail.DealId).
+
+## A3 Deal detail — PUBLISHED rev 8 (env_app verified, 2026-11-11 18:48 UTC; Mentor session afcf99f8) — form follows (A3-3)
+Source: deals/[id]/page.tsx, deals/[id]/_components/deal-path-bar.tsx, _components/deal-highlights.tsx, deals/approvals/page.tsx, deals/[id]/order-proof-actions.ts, _components/entity-timeline.tsx.
+| Prompt | Element | Change |
+|---|---|---|
+| A3-1 | UI_Deal_Approve, UI_Deal_Reject (server wrappers) | Deal_Approve / Deal_Reject |
+| A3-1 | DealDetail | GetDeal = Deal_Get + GetMyContext + HasPermission approveDeals (CanApprove) / manageDeals (CanEdit); PageHeader (name, company · owner, breadcrumb Deals, Edit, "Change stage…" → StageChangeDrawer); StagePathBar; approval banner (pending → Approve / Reject with required reason; approved/rejected badge); 6 KpiTiles (value, stage, expected close, owner, probability, pushes); Card Details (company, primary contact, forecast, source, next step, competitor, hold / lost reason, description); Card Governance (original close, slip days, pushes, rollbacks, quota weight, last stage change, created, updated) |
+| A3-2 | UI_DealOrderProof_Add / _Remove, UI_ProofTypeOptions | proof types from LookupValue OrderProofType (client copy) |
+| A3-2 | DealDetail | Card "Order proofs (PO)" (count + Σ subtotal of value; table type/ref/date/buyer/subtotal/tax/total; Remove; Add PO form: type, number, date, buyer, value before tax ₹, tax ₹ → minor units, total 0 = server computes); GetHistory = Deal_GetHistory → Stage history, Close date changes, Audit log tables; history refreshed after every change |
+Gap: Contacts card shows only the primary contact (DealItem.ContactName/ContactEmail) — Sales has no public DealContact list action. Not built: PO file upload (decision 22d).
+| A3-3 | UI_Deal_Create, UI_Deal_Update (server wrappers) | all Deal_Create / Deal_Update inputs; DealType, LostReason, RollbackReasonCode/Note empty |
+| A3-3 | DealForm(DealId default 0) — **PUBLISHED rev 9 (env_app verified, 2026-11-11 18:55 UTC)** | GetFormContext (GetMyContext, Company_ListOptions, Member_ListOptions), GetDeal (Deal_Get when editing → prefill), GetContacts (Contact_ListOptions(CompanyId)); fields name, company (resets contact), primary contact, owner (default = me on create), stage (create: lead/qualified/proposal/negotiation/hold; edit: read-only badge — stage changes via the drawer), value ₹ → AmountMinor, margin % → MarginBps, expected close, hold reason/revisit/note when hold, close-date reason (edit); Sales Message + FailedRules shown in sx-alert-error; success → DealDetail. Links: DealDetail Edit → DealForm; "New deal" on Deals and Pipeline |
+A3-3 deviation (Mentor): Next step, Source, Competitor, Description fields show only in edit mode (create sends ""). Polish item.
+Source A3-3: deals/_components/create-deal-form.tsx, edit-deal-drawer.tsx, deal-amount-fields.tsx, deal-company-contact-fields.tsx.
+
+## A4 Companies
+### A4-0 Company_List SortDesc check (Sales rev 19, READ-ONLY, Mentor session b60f8f24) — NOT CONFIRMED, nothing changed
+Node text: aggregate GetCompanies sorts SortKey **Descending**, then TieKey Descending; SortKey = (DeletedAt / DealCount / OpenPipelineValueMinor / WonLifetimeValueMinor / LastActivityAt / CreatedAt key) × If(IncludeDeleted or SortDesc, 1, -1). So SortDesc = True → newest / largest first; False → oldest / smallest first. The R1 suspicion came from reading the multiplier without the Descending sort. Sales not changed, not published.
+Other findings (not fixed, logged): Medium — Deal_List has no CompanyId input (UI filters client-side, see A4-1); Company_List PageSize silently 50 unless MaxRecords is 25/50/100; IncludeDeleted ignores SortBy (most recently deleted first). Low — "recent" is not a defined SortBy (falls back to CreatedAt, which is what we want); "activity" puts companies without activity last; no StartIndex < 0 guard; Like filter does not escape % and _; unused local NowUtc.
+
+### A4-1 / A4-2 Companies screens — PUBLISHED rev 10 (env_app verified, 2026-11-11 19:14 UTC; Mentor session 0c9b41fe)
+Source: app/dashboard/companies/page.tsx, companies/[id]/page.tsx, companies/_components, lib/dedup.
+| Prompt | Element | Change |
+|---|---|---|
+| A4-1 | UI_Company_SoftDelete, UI_Company_Restore | wrappers (Success, OutcomeCode, Message) |
+| A4-1 | Companies | Company_List (Search, OwnerFilter all/mine/unassigned, IncludeDeleted = "Show deleted", SortBy recent/deals/pipeline/won/activity, SortDesc True, page 25); table company (→ CompanyDetail) + domain, industry, owner, open deals, open pipeline, won, contacts; Restore column when showing deleted; pagination; New company → CompanyForm |
+| A4-1 | CompanyDetail(CompanyId) | Company_Get + permissions (deleteCompanies, manageCompanies); KPIs (deals, open, won, open pipeline, won lifetime, contacts); Details card; Contacts card (Contact_List by CompanyId → ContactDetail); Deals card (Deal_List(Search = company name, IncludeClosed, 200) filtered client-side by CompanyId — Deal_List has no company input); Edit (CanEdit) / Delete with inline confirm → Company_SoftDelete → Companies |
+| A4-1 | ContactDetail(ContactId) | placeholder (A5) |
+| A4-2 | UI_Company_FindSimilar / _Create / _Update; CompanyForm(CompanyId default 0) | name, domain, industry, owner (default me); create: FindSimilar first → "Possible duplicates" panel (Exact match / NN% similar badge, "Open existing" → CompanyDetail, "Create anyway" → Create(DedupOverride True)); server duplicate_warning handled the same way; update → CompanyDetail |
+Note: FindSimilar returns nothing when the workspace flag DedupEnabled is off (Sales rule) — then Create runs directly. Validation 0 errors, 1 warning (unused ContactDetail.ContactId until A5).
+
+## A5 Contacts — PUBLISHED rev 11 (env_app verified, 2026-11-11 19:28 UTC; Mentor session 1088a46f)
+Source: app/dashboard/contacts/page.tsx, contacts/[id]/page.tsx, contacts/_components.
+| Prompt | Element | Change |
+|---|---|---|
+| A5-1 | UI_Contact_SoftDelete / _Restore | wrappers |
+| A5-1 | Contacts | Contact_List (Search name/email/title, CompanyId filter via Company_ListOptions, OwnerFilter, Show deleted, page 25); table name (→ ContactDetail) + title, company (→ CompanyDetail), email, phone, owner; Restore column; pagination |
+| A5-1 | ContactDetail(ContactId) | Contact_Get + permissions (deleteContacts, manageContacts); Details card; Company card (Open company, New deal); Edit; Delete with inline confirm |
+| A5-2 | UI_Contact_FindSimilar / _Create / _Update; ContactForm(ContactId, CompanyId) | first/last name, email, phone, job title, company, owner (default me); create: FindSimilar → "Possible duplicates" panel (NN% similar, Open existing, Create anyway); duplicate_email hard block shown as the Sales message; links: Contacts New contact, ContactDetail Edit, CompanyDetail "Add contact" (company pre-selected) |
+Notes: Contact_FindSimilar EmailMatch/HasEmailMatch are passed through but not shown (Create blocks a duplicate email anyway). Email/Phone inputs are Text type (Email type failed validation on Text variables). Contact detail has no deals list (DealListItem has no ContactId). Validation 0 errors, 1 warning (Login).
+
+## A6 Approvals — PUBLISHED rev 12 (env_app verified, 2026-11-11 19:34 UTC)
+Source: app/dashboard/deals/approvals/page.tsx, approvals/_components.
+| Element | Change |
+|---|---|
+| Approvals | GetPending = Deal_ListPendingApproval() (Items DealListItem, CanApprove); not CanApprove → EmptyState "You can't approve deals"; empty → "Nothing waiting for approval"; table Deal (→ DealDetail) + company, value, owner, updated, Pending badge, Approve (UI_Deal_Approve) / Reject (inline reason, required) (UI_Deal_Reject) → refresh |
+Not built: recently approved / rejected lists, bulk approve/reject (no Sales list actions for them).
+
+## Smoke test (END OF RUN, READ-ONLY, Mentor session 0042684f, rev 12) — 0 High, 5 Medium
+Every screen/block data action, After Fetch and button action read back. Verdict per Medium item:
+| # | Finding | Decision |
+|---|---|---|
+| 1 | DealDetail SaveProofOnClick sends TotalMinor 0 | by design — DealOrderProof_Add computes Subtotal + Tax when TotalMinor = 0 (S10). No change |
+| 2 | DealForm edit sends LostReason "" → editing a Lost deal fails with lost_reason_required | **fixed in A7** |
+| 3 | DealForm / CompanyForm / ContactForm load errors silent | **fixed in A7** |
+| 4 | CompanyForm / ContactForm "Unassigned" sends an empty OwnerId to a mandatory input | not a bug — mandatory means "must be wired"; an empty identifier = unassigned in Sales. No change |
+| 5 | Workspace switch navigates to Home; on Home nothing re-fetches | **fixed in A7** (full reload) |
+No screen should error with the demo data: no Get call with Id 0 (forms skip Deal_Get/Company_Get/Contact_Get in create mode), no List.Current outside a list, bar width guarded against /0, no navigation loop (Workspaces uses IsWorkspacePicker). Low items left: GetOwners errors silent on Deals/Pipeline; CompanyDetail calls Company_Get twice (deals filter); Login runs the role check also after a failed login (harmless); Workspaces empty state is a dead end for a user without any workspace (Workspace_CreateFirst UI not built).
+
+## A7 polish + smoke-test fixes — PUBLISHED rev 13 (env_app verified, 2026-11-11 19:55 UTC)
+| Element | Old → New |
+|---|---|
+| DealForm | + local LostReason loaded from the deal and sent by Deal_Update (was ""); Next step / Source / Competitor / Description visible in create mode too; load-error alert (GetFormContext / GetDeal) + Save disabled on load error |
+| CompanyForm, ContactForm | load-error alert + Save disabled; IsSaving set around the update call |
+| MainLayout SwitchWorkspace, Workspaces OpenWorkspaceOnClick | navigate to Home → RedirectToURL(GetOwnerURLPath()) (full reload) |
+| ContactDetail, CompanyDetail, Home | NullDate guards → "—" (Created/Updated, Last activity, Recently updated) |
+| CompanyDetail | Contacts / Deals cards: skeleton while loading, error alert, EmptyState only after fetch |
+| DealDetail | Edit visible only when CanEdit; GetHistory error alert |
+| StageChangeDrawer | backdrop event OnClick → onclick (same as MainLayout) |
+Not done in A7 (needs a visual check in the browser; no screenshots possible through the MCP): spacing / heading comparison with the source pages.
+Validation 0 errors, 1 warning (Login public screen calls UI_StartSession — expected).
