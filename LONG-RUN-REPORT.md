@@ -283,3 +283,5 @@ Source of the expectations: notes/deal-governance-spec.md §3 (code wins). Actio
 | 13 | Value split 3 years | — | **Not built** (value split not in S8) |
 | 14 | FY proration | — | **Not built** |
 | 15 | Qualified → Lead on a dated deal | deal at qualified with date. Deal_ChangeStage(Id, "lead") → (Id, "lead", ClearCloseDate True) → (Id, "lead", ClearCloseDate True, RollbackReasonCode "wrong_stage_advance") | 1st (False, needs_close_date_clear); 2nd (False, rollback_reason_required); 3rd (True, ok): ExpectedCloseDate empty, DealDateChange (D → empty, IsPush False), audit date edit + stage rollback, OriginalCloseDate kept, ForecastCategory pipeline |
+- Part B done (no errors): Company_FindSimilar, Company_Create, Company_Update (public service actions). Notification_Create from Company_Update is allowed in ODC. Handlers: OnValidationError + AllExceptions (MEMBERSHIP_MISSING from Sales_Context passes through as SalesError with the original message).
+- Part C (SoftDelete, Restore, Get, List + RefreshRollups at the end of Create/Update) sent.
