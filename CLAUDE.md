@@ -40,6 +40,11 @@ Reply to the user in Hinglish. Prompts / code / OutSystems names in English.
    i) Deal_Update: the HoldRevisitOn today-or-later check applies only when a new HoldRevisitOn is given (≠ stored); an existing overdue revisit date does not block other edits (approved 2026-11-11).
    j) PENDING UI: "Revisit due list" = Hold deals with HoldRevisitOn before today (workspace date). PENDING indexes: Deal (TenantId, HealthBand), Deal (TenantId, PushCount/RollbackCount/QuotaWeight) for the At-risk list and reports.
    h) UserProfile Public = Yes (read-only for other apps); Membership stays Public = No; role lookups from other apps go through Member_GetRole(TargetUserId) (acting tenant only).
+22. S10 decisions (2026-11-11):
+   a) Deal_Reject re-derives ForecastCategory with Forecast_CategoryFor("negotiation") unless ForecastCategoryOverridden (deliberate fix of the source, which leaves closed_won; D10).
+   b) Owner checks owner_invalid ("Pick an owner who is an active member of this workspace.", new) and owner_assign_forbidden (manager → owner): Deal_Create always when OwnerId ≠ actor; Deal_Update only when the owner changes (≠ actor and ≠ stored owner).
+   c) Deal.ApprovalRequestId (Long Integer, cross-app id) links the current Won entry to its Foundation ApprovalRequest; Approval_Submit runs right before the Deal write, Approval_Cancel is the last node when a pending deal leaves Won.
+   d) PENDING (build with the Deal UI and the storage decision): order-proof warning checks with rep confirmation (buyer_missing / buyer_mismatch, supplier_mismatch, not_an_order, totals_mismatch, source checks.ts) and PO file upload (FileAttachment Category purchase_order, DocumentId; PDF reading via Integration). DealOrderProof_Add has only the blocking date checks and DocumentId 0.
 
 ## App map and entities (70: 69 after 12 approved merges + DealOrderProof; app merges 2026-11-11)
 Merges: Workflow → Salenix_Foundation; Performance → Salenix_Finance; Ask Mira → Salenix_Agent. Salenix and Salenix_Admin stay separate. All apps below created by hand by the user (read-only check 2026-11-11 passed).
