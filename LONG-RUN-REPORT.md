@@ -673,3 +673,58 @@ Deviations from the request (and why):
 - Deals are written with entity actions, not Deal_Create (governance would refuse back-dated history); no ActivityLog rows.
 Validation 0 errors; warnings = existing 2 FailedRules + 20 font.
 Not done: the run for TenantId 3 and the counts — DevTools has no button, and adding T9 needs a DevTools reference refresh in Studio first (references are by hand). Next steps in the final report of this run.
+
+---
+# Run 2026-11-11 night — R1 read actions for the UI, T9 demo data (standing approval: publish after a clean report)
+
+## R1 read-only check (Sales rev 18, Foundation rev 26, DevTools rev 14)
+Nothing of R1 existed under any name (Mentor + context_actions). Related only: Company_List / Contact_List (full items), DealItem (full record), Foundation Approval_ListPending (approval requests, not deals). Foundation had no member list → R1b ran.
+Side finding (not changed, test it): Company_List sorts ascending on SortKey × If(SortDesc, 1, -1) — SortDesc = True may give ASCENDING order (Mentor's reading; untested).
+
+## R1b Foundation Member_ListOptions — PUBLISHED rev 27 (env_app verified, 2026-11-11 17:13 UTC)
+| Element | Rules |
+|---|---|
+| MemberOptionItem (Public) | UserId (User Identifier), Label (Text 250), Email (Text 256), RoleCode (Text 50) |
+| Member_ListOptions(Search) → Items (Public service) | any active member; Foundation_ResolveContext → Membership ⋈ UserProfile (Only With, UserId), TenantId = acting, Status active (Trim+ToLower), Search in "First Last" or Email (Index, lower case); sort FirstName, LastName, Email; max 200; Label = Trim(First + " " + Last) else Email; RoleCode lower case. Handlers copied from Member_GetRole (ValidationError / MembershipMissing re-raise; AllExceptions Log Error = No → LogMessage + "FOUNDATION_ERROR: Something went wrong. Please try again.") |
+Name: Member_ListOptions (not Foundation_Member_ListOptions) — matches the existing public Member_GetRole / Member_ChangeRole / Member_Remove names. Validation 0 errors, 22 existing warnings.
+
+## R1 Sales read actions — PUBLISHED rev 19 (env_app verified, 2026-11-11 17:26 UTC; Mentor session 28d81ccf, prompts A1–A5)
+All service actions Public, TenantId from Sales_Context, handlers as Deal_Get (OnValidationError re-raise; AllExceptions Log Error = No → LogMessage "Salenix_Sales.<Action>" → SalesError, SALES_ERROR:/MEMBERSHIP_MISSING: passed through). Scope filter as Company_List: Persona ≠ "sales" or OwnerId = actor or OwnerId empty. Soft-deleted excluded (Company/Contact also MergedIntoId empty).
+| # | Element | Rules |
+|---|---|---|
+| A1 | DealListItem, StageTotalItem, PipelineColumn, OptionItem (Public structures) | DealListItem: DealId, Title, CompanyId (Long), CompanyName, StageCode, ValueMinor, CurrencyCode, ExpectedCloseDate, OwnerUserId, OwnerName, ApprovalStatus, HealthBand, UpdatedAt. StageTotalItem: StageCode, StageLabel, Count, ValueMinor. PipelineColumn: StageCode, StageLabel, DealCount, ValueMinor, Deals (DealListItem List). OptionItem: Id (Long), Label |
+| A1 | Stage_LabelFor (private Function) | lead…lost → Lead…Lost, else trimmed input (same labels as UIKit Stage_Label) |
+| A1 | Deal_List(Search, StageCode, OwnerUserId, ApprovalStatus, IncludeClosed, SortBy, StartIndex, MaxRecords) → Items, TotalCount | Deal ⟕ Company ⟕ UserProfile; Search on deal or company name (like); StageCode / OwnerUserId / ApprovalStatus optional; IncludeClosed False hides won + lost unless a StageCode is given; SortBy: updated (default, newest), value (largest), close (soonest, empty last), created (newest), name (A–Z) — all through ascending calculated keys NumKey / TextKey / TieKey (no direction flag); page size 1–200 else 50; TotalCount = aggregate Count; CompanyName = Company.Name else Deal.CompanyName; OwnerName = First Last else Email |
+| A2 | Deal_ListPipeline(OwnerUserId, Search) → Columns | always 5 columns lead, qualified, proposal, negotiation, hold (won/lost not on the board); DealCount / ValueMinor = all matching deals (grouped aggregate); Deals max 50 per column ordered ExpectedCloseDate asc (empty last), UpdatedAt desc, Id desc |
+| A3 | Dashboard_GetSummary() | Today = Foundation_TodayFor; month start in UTC = local midnight of day 1 − workspace offset (offset = DiffSeconds(UTC now, NowFor.LocalNow) rounded to 15 min); OpenPipelineMinor / OpenDealCount = open (not won/lost, hold included); WonThisMonth* = won with ClosedAt ≥ month start; ClosingNext30Count = open, not hold, close date today…today+30; OverdueCloseCount = open, not hold, close date < today; PendingApprovalCount = won + pending; StageTotals = the 5 open stages; TopDeals = 5 open by AmountMinor; RecentlyUpdated = 5 any stage by UpdatedAt; all in persona scope |
+| A4 | Deal_ListPendingApproval() → Items, CanApprove | Foundation_HasPermission(role, "approveDeals").HasPermission; false → empty list, no error; else won + pending, whole tenant (no persona filter, as source listDealsAwaitingApproval), ClosedAt desc, max 200 |
+| A4 | Company_ListOptions(Search) → Items (OptionItem) | Name like, sort Name, max 20, scope |
+| A4 | Contact_ListOptions(CompanyId, Search) → Items | CompanyId 0 = any; Search on FirstName / LastName / Email; Label "First Last (email)" / name / email; sort First, Last, Email; max 20; scope |
+| A5 | DevOnly_DemoCounts(TenantId) → Companies, CompanyNotes, Contacts, Deals, DealContacts, DealStageHistory, DealOrderProofs, Report | DEV ONLY (decision 19 list): DevOnly_DemoGuard; current "[DEMO] " rows (Substr(x, 0, 7), not soft-deleted); child tables via Only-With join to a non-deleted [DEMO] deal; handler as DevOnly_ClearDemoData |
+Validation 0 errors; 20 existing warnings (2 FailedRules + 18 font).
+Deviations from the request / source: pipeline order = ExpectedCloseDate (as asked; source board = UpdatedAt desc, all 7 stages); closing/overdue counts exclude Hold (parked deals); open pipeline sums AmountMinor across currencies as stored (all demo deals INR; workspace-currency conversion not built); Deal_List has no SortDesc input (direction is part of the SortBy code).
+
+## S9a DevTools T9 Demo data — PUBLISHED rev 15 (env_app verified, 2026-11-11 17:34 UTC)
+| Element | Change |
+|---|---|
+| T9CountRow (structure, private) | Entity, Expected, Actual, Status |
+| Dev_T9_Check | GetMyContext + Workspace_ListMine → TenantIdText, RoleCode, Persona, WorkspaceName |
+| Dev_T9_Seed(SecondOwnerEmail, ExpectedTenantId) | acting tenant ≠ expected → Ran False, "Active workspace is X, expected Y. Nothing seeded."; else DevOnly_SeedDemoData → all outputs (…Created counts) |
+| Dev_T9_Clear(ExpectedTenantId) | same tenant check → DevOnly_ClearDemoData |
+| Section_T9_DemoData (last section) | inputs Second owner email (dylan.rivera@example.com), Expected TenantId (3); buttons Check workspace / Seed / Clear; Result_T9 list; T9CountTable (Expected 12/12/25/30/41/94/4 vs the seed's Created counts, OK/DIFF) |
+Validation 0 errors, 18 font warnings. R1 Run buttons + DevOnly_DemoCounts need DevTools references first (Studio) → S9b.
+
+## S9b — SKIPPED (user decision 2026-11-11)
+R1 Run buttons in DevTools not built; the Salenix screens will exercise the R1 actions. DevTools stays at rev 15 (no R1 / DevOnly_DemoCounts / Member_ListOptions references).
+
+## V1 — docs note (no MCP check possible)
+- Active workspace + role: resolved from the user's login session (UserProfile.ActiveTenantId), so it cannot be read through the MCP; T9 "Check workspace" shows TenantId / Workspace / Role and the Seed wrapper refuses when the acting tenant ≠ Expected TenantId (default 3).
+- User report 2026-11-11: "Seeded, counts OK" — T9 counts table all OK: 12 companies, 12 company notes, 25 contacts, 30 deals, 41 DealContact, 94 DealStageHistory, 4 DealOrderProof (from DevOnly_SeedDemoData …Created outputs).
+- R1 actions not run yet (no DevTools buttons); first runtime check = the Salenix screens. Expected on the demo data as owner: Deal_ListPipeline 5 columns lead 5 / qualified 5 / proposal 5 / negotiation 5 / hold 3; Deal_List (IncludeClosed False) TotalCount 23, (True) 30; Dashboard OpenDealCount 23, PendingApprovalCount ≥ 1 (deal Key 4 "[DEMO] Forging dies retrofit", legacy pending), WonThisMonthCount depends on the close offsets (won closed 6–52 days ago); Deal_ListPendingApproval as owner → CanApprove True, ≥ 1 row. (Counts add any non-demo deals of the workspace.)
+
+## Salenix app reference list (ONE Studio step; Salenix web app, fresh copy, Manage Dependencies, then publish from Studio)
+- **Salenix_Theme (rev 4):** the theme (set as the app's default theme in app properties; the style sheet is the only CSS, decision 20).
+- **Salenix_UIKit (rev 4):** blocks AppLayout, PageHeader, Card, KpiTile, StageBadge, StatusBadge, MoneyText, EmptyState, StagePathBar; client functions Stage_Label, Money_FormatText. (Release the library version first if Studio does not offer rev 4.)
+- **Salenix_Foundation (rev 27):** role SalenixUser; service actions Foundation_EnsureMyProfile, Foundation_GetMyContext, Foundation_HasPermission, Foundation_GetFlags, Foundation_TodayFor, Workspace_ListMine, Workspace_SetActive, Workspace_Create, Workspace_CreateFirst, Notification_ListMine, Notification_MarkRead, Notification_MarkAllRead, Invitation_GetByToken, Invitation_Accept (AcceptInvite screen lives in Salenix, decision 21g), Member_ListOptions; structures WorkspaceItem, NotificationItem, MemberOptionItem.
+- **Salenix_Sales (rev 19):** service actions Dashboard_GetSummary; Deal_List, Deal_ListPipeline, Deal_ListPendingApproval, Deal_Get, Deal_GetHistory, Deal_Create, Deal_Update, Deal_ChangeStage, Deal_Approve, Deal_Reject, DealOrderProof_Add, DealOrderProof_Remove; Company_List, Company_Get, Company_FindSimilar, Company_Create, Company_Update, Company_SoftDelete, Company_Restore, Company_ListOptions; Contact_List, Contact_Get, Contact_FindSimilar, Contact_Create, Contact_Update, Contact_SoftDelete, Contact_Restore, Contact_ListOptions; structures DealListItem, PipelineColumn, StageTotalItem, OptionItem, DealItem, DealOrderProofItem, DealAuditItem, DealDateChangeItem, DealStageItem, CompanyItem, CompanyMatchItem, ContactItem, ContactMatchItem.
+- NOT referenced by Salenix (on purpose): Notification_Create (server-to-server), Approval_* (Sales calls them; UI uses Deal_Approve / Deal_Reject), Member_ChangeRole / Member_Remove / Invitation_Create / ListPending / Revoke / Settings_SetFlags / Member_GetRole (→ Salenix_Admin), Foundation_NowFor (server-only, never to the browser), Sales_StageSelfCheck, every DevOnly_* (decision 19), entities (UI gets structures only).
