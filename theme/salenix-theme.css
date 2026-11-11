@@ -1,0 +1,1172 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap");
+
+/* ==========================================================================
+   Salenix theme v2 - copy of the source design (AskMiraa palette, light only).
+   Source: src/app/globals.css, src/lib/brand/tokens.ts, src/app/layout.tsx,
+   src/app/dashboard/_components/*. Tailwind slate/zinc = cream-to-ink ramp,
+   indigo/violet/purple = maroon, blue/sky = info blue (globals.css @theme).
+   Doubled classes (.sx-x.sx-x) raise specificity above OutSystems UI widget
+   rules such as .form-control[data-input] and .btn.btn-primary.
+   ========================================================================== */
+
+/* --- Tokens ------------------------------------------------------------- */
+:root {
+  /* cream (slate-50..300) - page, strips, borders */
+  --sx-cream-50: #fef8f4;
+  --sx-cream-100: #f9efe8;
+  --sx-cream-200: #f0e2d8;
+  --sx-cream-300: #e3cfc1;
+  /* ink (slate-400..950) - text */
+  --sx-ink-400: #a89c98;
+  --sx-ink-500: #7a6e68;
+  --sx-ink-600: #645853;
+  --sx-ink-700: #4b403c;
+  --sx-ink-800: #271e1c;
+  --sx-ink-900: #1a1110;
+  --sx-ink-950: #100404;
+  /* maroon (indigo-50..950) - accent */
+  --sx-maroon-50: #f6eceb;
+  --sx-maroon-100: #eedcda;
+  --sx-maroon-200: #ddbcb9;
+  --sx-maroon-300: #c4908c;
+  --sx-maroon-400: #a3585b;
+  --sx-maroon-500: #7d0712;
+  --sx-maroon-600: #6b0710;
+  --sx-maroon-700: #5c0a11;
+  --sx-maroon-800: #48080e;
+  --sx-maroon-900: #34040a;
+  /* marigold - active nav pill */
+  --sx-marigold-50: #fff5e3;
+  --sx-marigold-100: #feebc4;
+  --sx-marigold-500: #f8a01a;
+  --sx-marigold-600: #df840b;
+  --sx-marigold-700: #b8650a;
+  /* info blue (blue/sky) */
+  --sx-info-50: #eef5f8;
+  --sx-info-100: #d9e8ef;
+  --sx-info-200: #b3d1df;
+  --sx-info-500: #2d6a8a;
+  --sx-info-600: #245a76;
+  --sx-info-700: #1d4a61;
+  /* status (Tailwind emerald/amber/rose/red/orange, untouched by the source) */
+  --sx-positive-50: #ecfdf5;
+  --sx-positive-100: #d1fae5;
+  --sx-positive-200: #a7f3d0;
+  --sx-positive-600: #059669;
+  --sx-positive-700: #047857;
+  --sx-warning-50: #fffbeb;
+  --sx-warning-100: #fef3c7;
+  --sx-warning-200: #fde68a;
+  --sx-warning-500: #f59e0b;
+  --sx-warning-700: #b45309;
+  --sx-warning-800: #92400e;
+  --sx-negative-50: #fff1f2;
+  --sx-negative-100: #ffe4e6;
+  --sx-negative-200: #fecdd3;
+  --sx-negative-600: #e11d48;
+  --sx-negative-700: #be123c;
+  --sx-danger-50: #fef2f2;
+  --sx-danger-600: #dc2626;
+  --sx-danger-700: #b91c1c;
+  --sx-orange-100: #ffedd5;
+  --sx-orange-700: #c2410c;
+  /* semantic (globals.css :root) */
+  --sx-bg: var(--sx-cream-50);
+  --sx-fg: var(--sx-ink-900);
+  --sx-surface: #ffffff;
+  --sx-surface-muted: var(--sx-cream-100);
+  --sx-border: var(--sx-cream-200);
+  --sx-border-strong: var(--sx-cream-300);
+  --sx-divider: var(--sx-cream-100);
+  --sx-accent: var(--sx-maroon-500);
+  --sx-accent-fg: #ffffff;
+  --sx-accent-soft: var(--sx-maroon-50);
+  --sx-text: var(--sx-ink-900);
+  --sx-text-body: var(--sx-ink-700);
+  --sx-text-muted: var(--sx-ink-500);
+  --sx-text-subtle: var(--sx-ink-400);
+  /* radius (rounded / -md / -lg / -full) */
+  --sx-radius-sm: 4px;
+  --sx-radius-md: 6px;
+  --sx-radius-lg: 8px;
+  --sx-radius-full: 9999px;
+  /* shadows */
+  --sx-shadow-hairline: 0 1px 0 rgba(15, 23, 42, 0.04);
+  --sx-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --sx-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --sx-focus-ring: 0 0 0 2px rgba(125, 7, 18, 0.3);
+  /* fonts (layout.tsx: Inter UI, Fraunces titles, Geist Mono numbers) */
+  --sx-font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --sx-font-display: "Fraunces", ui-serif, Georgia, serif;
+  --sx-font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* font sizes */
+  --sx-fs-10: 10px;
+  --sx-fs-11: 11px;
+  --sx-fs-12: 12px;
+  --sx-fs-13: 13px;
+  --sx-fs-14: 14px;
+  --sx-fs-15: 15px;
+  --sx-fs-20: 20px;
+  /* rail */
+  --sx-rail-gradient: linear-gradient(180deg, #6b0a13 0%, #5c0a11 45%, #34040a 100%);
+  --sx-rail-width: 12.5rem;
+  --sx-rail-width-collapsed: 3.5rem;
+
+  /* --- OutSystems UI variables mapped to the tokens ---------------------- */
+  --color-primary: var(--sx-maroon-600);
+  --color-primary-hover: var(--sx-maroon-500);
+  --color-primary-light: var(--sx-maroon-100);
+  --color-primary-lightest: var(--sx-maroon-50);
+  --color-secondary: var(--sx-ink-700);
+  --color-secondary-hover: var(--sx-ink-600);
+  --color-neutral-0: #ffffff;
+  --color-neutral-1: var(--sx-cream-50);
+  --color-neutral-2: var(--sx-cream-100);
+  --color-neutral-3: var(--sx-cream-200);
+  --color-neutral-4: var(--sx-cream-300);
+  --color-neutral-5: var(--sx-ink-400);
+  --color-neutral-6: var(--sx-ink-500);
+  --color-neutral-7: var(--sx-ink-600);
+  --color-neutral-8: var(--sx-ink-700);
+  --color-neutral-9: var(--sx-ink-800);
+  --color-neutral-10: var(--sx-ink-900);
+  --color-background-body: var(--sx-cream-50);
+  --color-success: var(--sx-positive-600);
+  --color-success-light: var(--sx-positive-50);
+  --color-warning: var(--sx-warning-500);
+  --color-warning-light: var(--sx-warning-50);
+  --color-error: var(--sx-negative-600);
+  --color-error-light: var(--sx-negative-50);
+  --color-info: var(--sx-info-500);
+  --color-info-light: var(--sx-info-50);
+  --color-focus-inner: var(--sx-maroon-200);
+  --color-focus-outer: var(--sx-maroon-500);
+  --font-family-body: var(--sx-font-body);
+  --font-family-heading: var(--sx-font-display);
+  --font-size-base: var(--sx-fs-13);
+  --font-size-s: var(--sx-fs-12);
+  --font-size-xs: var(--sx-fs-11);
+  --border-radius-soft: var(--sx-radius-md);
+  --border-radius-rounded: var(--sx-radius-full);
+  --shadow-xs: var(--sx-shadow-hairline);
+  --shadow-s: var(--sx-shadow-sm);
+  --shadow-xl: var(--sx-shadow-xl);
+}
+
+/* --- Base --------------------------------------------------------------- */
+/* globals.css body: cream page, ink text, Inter with cv02-cv11 */
+html,
+body {
+  background: var(--sx-bg);
+  color: var(--sx-fg);
+  font-family: var(--sx-font-body);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Page layout -------------------------------------------------------- */
+/* dashboard pages: mx-auto w-full max-w-[88rem] px-4 py-6 sm:px-5 lg:px-6 */
+.sx-page {
+  width: 100%;
+  max-width: 88rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 24px 16px;
+}
+@media (min-width: 640px) {
+  .sx-page {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+@media (min-width: 1024px) {
+  .sx-page {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+/* page header row: flex items-center justify-between gap-3 */
+.sx-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+/* globals.css "main h1" Fraunces + h1 text-xl font-semibold tracking-tight text-slate-900 */
+.sx-page-title {
+  margin: 0;
+  font-family: var(--sx-font-display);
+  font-size: var(--sx-fs-20);
+  line-height: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--sx-ink-900);
+}
+/* page subtitle: p mt-0.5 text-[12px] text-slate-500 */
+.sx-page-subtitle {
+  margin: 2px 0 0;
+  font-size: var(--sx-fs-12);
+  color: var(--sx-ink-500);
+}
+/* section heading: h2 text-[15px] font-semibold tracking-tight text-slate-900 */
+.sx-section-title {
+  margin: 0;
+  font-size: var(--sx-fs-15);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--sx-ink-900);
+}
+/* card heading: h2 text-[13px] font-semibold text-slate-900 */
+.sx-card-title {
+  margin: 0;
+  font-size: var(--sx-fs-13);
+  font-weight: 600;
+  color: var(--sx-ink-900);
+}
+/* stack helper: flex flex-col gap-3 (spacing between page sections) */
+.sx-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* row helper: flex items-center gap-2 (button groups, inline items) */
+.sx-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+/* grid helper: grid gap-3 sm:grid-cols-2 */
+.sx-grid-2 {
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 640px) {
+  .sx-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* --- Cards -------------------------------------------------------------- */
+/* card: rounded-lg border border-slate-200 bg-white p-4 shadow-[0_1px_0_rgba(15,23,42,0.04)] */
+.sx-card {
+  background: var(--sx-surface);
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius-lg);
+  box-shadow: var(--sx-shadow-hairline);
+  padding: 16px;
+}
+/* compact card: rounded-lg border border-slate-200 bg-white p-3 */
+.sx-card-compact {
+  padding: 12px;
+}
+/* card that holds a table: overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm */
+.sx-card-flush {
+  padding: 0;
+  overflow: hidden;
+  box-shadow: var(--sx-shadow-sm);
+}
+/* card header row: flex items-center justify-between gap-2 */
+.sx-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* --- KPI / metric cards ------------------------------------------------- */
+/* kpi-strip.tsx grid: grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 */
+.sx-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (min-width: 640px) {
+  .sx-kpi-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .sx-kpi-strip {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+/* kpi-strip.tsx tile: @container rounded-lg border bg-white px-3 py-3 shadow hairline */
+.sx-kpi {
+  container-type: inline-size;
+  position: relative;
+  overflow: hidden;
+  background: var(--sx-surface);
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius-lg);
+  box-shadow: var(--sx-shadow-hairline);
+  padding: 12px;
+}
+/* kpi-strip.tsx value: font-mono clamp(13px,8cqi,19px) semibold leading-none tabular-nums */
+.sx-kpi-value {
+  margin-top: 4px;
+  white-space: nowrap;
+  font-family: var(--sx-font-mono);
+  font-size: clamp(13px, 8cqi, 19px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  color: var(--sx-ink-900);
+}
+/* kpi-strip.tsx footer: mt-1.5 border-t border-slate-100 pt-1 text-[9.5px] uppercase tracking-[0.06em] text-slate-400 */
+.sx-kpi-footer {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--sx-divider);
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sx-ink-400);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* metric-card.tsx: rounded-md border p-3 transition-shadow hover:shadow-sm (tone neutral) */
+.sx-metric {
+  background: var(--sx-surface);
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius-md);
+  padding: 12px;
+  transition: box-shadow 0.15s ease;
+}
+.sx-metric:hover {
+  box-shadow: var(--sx-shadow-sm);
+}
+/* metric-card.tsx tone info: border-indigo-200 bg-indigo-50/30 */
+.sx-metric-info {
+  border-color: var(--sx-maroon-200);
+  background: rgba(246, 236, 235, 0.3);
+}
+/* metric-card.tsx tone success: border-emerald-200 bg-emerald-50/30 */
+.sx-metric-success {
+  border-color: var(--sx-positive-200);
+  background: rgba(236, 253, 245, 0.3);
+}
+/* metric-card.tsx tone warning: border-amber-200 bg-amber-50/30 */
+.sx-metric-warning {
+  border-color: var(--sx-warning-200);
+  background: rgba(255, 251, 235, 0.3);
+}
+/* metric-card.tsx tone danger: border-rose-200 bg-rose-50/30 */
+.sx-metric-danger {
+  border-color: var(--sx-negative-200);
+  background: rgba(255, 241, 242, 0.3);
+}
+/* metric-card.tsx emptyState: rounded-md border border-dashed border-slate-300 bg-slate-50/40 */
+.sx-metric-empty {
+  border-style: dashed;
+  border-color: var(--sx-cream-300);
+  background: rgba(254, 248, 244, 0.4);
+}
+.sx-metric-empty:hover {
+  box-shadow: none;
+}
+/* metric-card.tsx / kpi-strip.tsx label: text-[10px] font-semibold uppercase tracking-wide text-slate-500 */
+.sx-metric-label {
+  font-size: var(--sx-fs-10);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: var(--sx-ink-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sx-metric-empty .sx-metric-label {
+  color: var(--sx-ink-400);
+}
+/* metric-card.tsx value: mt-1 font-mono text-xl font-semibold tabular-nums leading-tight */
+.sx-metric-value {
+  margin-top: 4px;
+  font-family: var(--sx-font-mono);
+  font-size: var(--sx-fs-20);
+  font-weight: 600;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  color: var(--sx-ink-900);
+}
+.sx-metric-info .sx-metric-value {
+  color: var(--sx-maroon-700);
+}
+.sx-metric-success .sx-metric-value {
+  color: var(--sx-positive-700);
+}
+.sx-metric-warning .sx-metric-value {
+  color: var(--sx-warning-800);
+}
+.sx-metric-danger .sx-metric-value {
+  color: var(--sx-negative-700);
+}
+.sx-metric-empty .sx-metric-value {
+  color: var(--sx-cream-300);
+}
+/* metric-card.tsx / kpi-strip.tsx hint: mt-1 truncate text-[10.5px] text-slate-500 */
+.sx-metric-hint {
+  margin-top: 4px;
+  font-size: 10.5px;
+  color: var(--sx-ink-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sx-metric-empty .sx-metric-hint {
+  white-space: normal;
+  line-height: 1.375;
+}
+/* metric-card.tsx TrendIndicator: rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold tabular-nums */
+.sx-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: var(--sx-radius-full);
+  font-size: 9.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* metric-card.tsx TrendIndicator up: bg-emerald-100 text-emerald-700 */
+.sx-trend-up {
+  background: var(--sx-positive-100);
+  color: var(--sx-positive-700);
+}
+/* metric-card.tsx TrendIndicator down: bg-rose-100 text-rose-700 */
+.sx-trend-down {
+  background: var(--sx-negative-100);
+  color: var(--sx-negative-700);
+}
+
+/* --- Tables ------------------------------------------------------------- */
+/* tables: min-w-full divide-y divide-slate-100 text-[13px] */
+.sx-table.sx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--sx-fs-13);
+  color: var(--sx-ink-700);
+  background: var(--sx-surface);
+}
+/* thead: bg-slate-50/95 text-[10px] uppercase tracking-[0.06em] text-slate-500; th px-3 py-2 text-left font-medium */
+.sx-table.sx-table th {
+  padding: 8px 12px;
+  background: rgba(254, 248, 244, 0.95);
+  border-bottom: 1px solid var(--sx-divider);
+  font-size: var(--sx-fs-10);
+  font-weight: 500;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sx-ink-500);
+}
+/* td: px-3 py-2; tbody divide-y divide-slate-100 */
+.sx-table.sx-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--sx-divider);
+  vertical-align: middle;
+}
+.sx-table.sx-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+/* tr: transition-colors hover:bg-slate-50/70 */
+.sx-table.sx-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+.sx-table.sx-table tbody tr:hover {
+  background: rgba(254, 248, 244, 0.7);
+}
+/* numeric cell: px-3 py-2 text-right font-mono tabular-nums */
+.sx-table .sx-num,
+.sx-num {
+  text-align: right;
+  font-family: var(--sx-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+/* primary cell text: text-[13px] font-medium text-slate-900 */
+.sx-cell-strong {
+  font-weight: 500;
+  color: var(--sx-ink-900);
+}
+/* pagination-controls.tsx: flex justify-between gap-3 border-t border-slate-200 px-4 py-2.5 text-xs text-slate-500 */
+.sx-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--sx-border);
+  font-size: var(--sx-fs-12);
+  color: var(--sx-ink-500);
+}
+/* pagination-controls.tsx Prev/Next: rounded-md border border-slate-200 px-2 py-1 hover:bg-slate-50 disabled:opacity-50 */
+.sx-pagination-btn.sx-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: auto;
+  padding: 4px 8px;
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius-md);
+  background: var(--sx-surface);
+  color: var(--sx-ink-500);
+  font-size: var(--sx-fs-12);
+  cursor: pointer;
+}
+.sx-pagination-btn.sx-pagination-btn:hover {
+  background: var(--sx-cream-50);
+}
+.sx-pagination-btn.sx-pagination-btn:disabled,
+.sx-pagination-btn.sx-pagination-btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --- Buttons ------------------------------------------------------------ */
+/* primary button: inline-flex gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-[13px] font-medium text-white */
+.sx-btn.sx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: auto;
+  min-height: 0;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--sx-radius-md);
+  font-family: var(--sx-font-body);
+  font-size: var(--sx-fs-13);
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  box-shadow: none;
+}
+.sx-btn.sx-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--sx-maroon-500);
+}
+.sx-btn.sx-btn:disabled,
+.sx-btn.sx-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+/* primary: bg-indigo-600 hover:bg-indigo-500 shadow-sm */
+.sx-btn-primary.sx-btn-primary {
+  background: var(--sx-maroon-600);
+  color: #ffffff;
+  box-shadow: var(--sx-shadow-sm);
+}
+.sx-btn-primary.sx-btn-primary:hover {
+  background: var(--sx-maroon-500);
+  color: #ffffff;
+}
+/* secondary: rounded-md border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 */
+.sx-btn-secondary.sx-btn-secondary {
+  background: var(--sx-surface);
+  border-color: var(--sx-border);
+  color: var(--sx-ink-700);
+  box-shadow: var(--sx-shadow-sm);
+}
+.sx-btn-secondary.sx-btn-secondary:hover {
+  background: var(--sx-cream-50);
+  color: var(--sx-ink-700);
+}
+/* ghost: icon/text buttons, rounded-md p-1.5 text-slate-500 hover:bg-slate-100 */
+.sx-btn-ghost.sx-btn-ghost {
+  background: transparent;
+  color: var(--sx-ink-500);
+}
+.sx-btn-ghost.sx-btn-ghost:hover {
+  background: var(--sx-cream-100);
+  color: var(--sx-ink-700);
+}
+/* danger: bg-rose-600 hover:bg-rose-500 text-white (delete confirm) */
+.sx-btn-danger.sx-btn-danger {
+  background: var(--sx-negative-600);
+  color: #ffffff;
+}
+.sx-btn-danger.sx-btn-danger:hover {
+  background: #f43f5e;
+  color: #ffffff;
+}
+/* small: rounded bg-indigo-600 px-2 py-1 text-[11px] font-medium (inline row actions) */
+.sx-btn-sm.sx-btn-sm {
+  padding: 4px 8px;
+  font-size: var(--sx-fs-11);
+  line-height: 16px;
+  border-radius: var(--sx-radius-sm);
+}
+/* text link: text-[11px] font-medium text-indigo-600 hover:text-indigo-500 */
+.sx-link {
+  font-size: var(--sx-fs-12);
+  font-weight: 500;
+  color: var(--sx-maroon-600);
+  text-decoration: none;
+  cursor: pointer;
+}
+.sx-link:hover {
+  color: var(--sx-maroon-500);
+}
+
+/* --- Forms -------------------------------------------------------------- */
+/* field wrapper: flex flex-col gap-1.5 */
+.sx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+/* label: text-xs font-medium text-slate-700 */
+.sx-label.sx-label {
+  font-size: var(--sx-fs-12);
+  font-weight: 500;
+  color: var(--sx-ink-700);
+  margin: 0;
+}
+/* input: w-full rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[13px] shadow-sm placeholder:text-slate-400 */
+.sx-input.sx-input {
+  width: 100%;
+  height: auto;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius-md);
+  background: var(--sx-surface);
+  color: var(--sx-ink-900);
+  font-family: var(--sx-font-body);
+  font-size: var(--sx-fs-13);
+  line-height: 20px;
+  box-shadow: var(--sx-shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.sx-input.sx-input::placeholder {
+  color: var(--sx-ink-400);
+}
+/* focus: focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 */
+.sx-input.sx-input:focus,
+.sx-input.sx-input:focus-within {
+  outline: none;
+  border-color: var(--sx-maroon-400);
+  box-shadow: var(--sx-focus-ring);
+}
+.sx-input.sx-input:disabled,
+.sx-input.sx-input[disabled] {
+  background: var(--sx-cream-50);
+  color: var(--sx-ink-500);
+  cursor: not-allowed;
+}
+/* textarea: same as input, min height for notes */
+textarea.sx-input.sx-input {
+  min-height: 80px;
+  resize: vertical;
+}
+/* select: same as input with room for the arrow */
+select.sx-input.sx-input {
+  padding-right: 28px;
+}
+/* invalid input: OutSystems adds not-valid on failed validation (text-xs text-red-600 message) */
+.sx-input.sx-input.not-valid {
+  border-color: var(--sx-danger-600);
+}
+.sx-field-error {
+  font-size: var(--sx-fs-12);
+  color: var(--sx-danger-600);
+}
+/* checkbox: h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 */
+.sx-checkbox.sx-checkbox {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--sx-maroon-600);
+}
+/* error banner: rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 */
+.sx-alert-error {
+  padding: 8px 12px;
+  border-radius: var(--sx-radius-md);
+  background: var(--sx-danger-50);
+  color: var(--sx-danger-700);
+  font-size: var(--sx-fs-12);
+}
+
+/* --- Badges ------------------------------------------------------------- */
+/* status pill base: STATUS_TINTS + rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 */
+.sx-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--sx-radius-full);
+  font-size: var(--sx-fs-10);
+  font-weight: 600;
+  line-height: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+  box-shadow: inset 0 0 0 1px transparent;
+}
+/* tokens.ts STATUS_TINTS.positive: bg-emerald-50 text-emerald-700 ring-emerald-200 */
+.sx-badge-positive {
+  background: var(--sx-positive-50);
+  color: var(--sx-positive-700);
+  box-shadow: inset 0 0 0 1px var(--sx-positive-200);
+}
+/* tokens.ts STATUS_TINTS.warning: bg-amber-50 text-amber-800 ring-amber-200 */
+.sx-badge-warning {
+  background: var(--sx-warning-50);
+  color: var(--sx-warning-800);
+  box-shadow: inset 0 0 0 1px var(--sx-warning-200);
+}
+/* tokens.ts STATUS_TINTS.negative: bg-rose-50 text-rose-700 ring-rose-200 */
+.sx-badge-negative {
+  background: var(--sx-negative-50);
+  color: var(--sx-negative-700);
+  box-shadow: inset 0 0 0 1px var(--sx-negative-200);
+}
+/* tokens.ts STATUS_TINTS.info: bg-indigo-50 text-indigo-700 ring-indigo-200 (indigo = maroon) */
+.sx-badge-info {
+  background: var(--sx-maroon-50);
+  color: var(--sx-maroon-700);
+  box-shadow: inset 0 0 0 1px var(--sx-maroon-200);
+}
+/* tokens.ts STATUS_TINTS.neutral: bg-slate-100 text-slate-700 ring-slate-200 */
+.sx-badge-neutral {
+  background: var(--sx-cream-100);
+  color: var(--sx-ink-700);
+  box-shadow: inset 0 0 0 1px var(--sx-cream-200);
+}
+/* deal stage pill: STAGE_BADGE_STYLES (deal-highlights.tsx), rounded-full no ring */
+.sx-stage {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--sx-radius-full);
+  font-size: var(--sx-fs-10);
+  font-weight: 600;
+  line-height: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+/* STAGE_BADGE_STYLES.lead: bg-slate-100 text-slate-600 */
+.sx-stage-lead {
+  background: var(--sx-cream-100);
+  color: var(--sx-ink-600);
+}
+/* STAGE_BADGE_STYLES.qualified: bg-blue-100 text-blue-700 (blue = info blue) */
+.sx-stage-qualified {
+  background: var(--sx-info-100);
+  color: var(--sx-info-700);
+}
+/* STAGE_BADGE_STYLES.proposal: bg-indigo-100 text-indigo-700 (indigo = maroon) */
+.sx-stage-proposal {
+  background: var(--sx-maroon-100);
+  color: var(--sx-maroon-700);
+}
+/* STAGE_BADGE_STYLES.negotiation: bg-amber-100 text-amber-800 */
+.sx-stage-negotiation {
+  background: var(--sx-warning-100);
+  color: var(--sx-warning-800);
+}
+/* STAGE_BADGE_STYLES.hold: bg-orange-100 text-orange-700 */
+.sx-stage-hold {
+  background: var(--sx-orange-100);
+  color: var(--sx-orange-700);
+}
+/* STAGE_BADGE_STYLES.won: bg-emerald-100 text-emerald-700 */
+.sx-stage-won {
+  background: var(--sx-positive-100);
+  color: var(--sx-positive-700);
+}
+/* STAGE_BADGE_STYLES.lost: bg-rose-100 text-rose-700 */
+.sx-stage-lost {
+  background: var(--sx-negative-100);
+  color: var(--sx-negative-700);
+}
+
+/* --- Filter chips ------------------------------------------------------- */
+/* filter-chips.tsx bar: flex flex-wrap gap-1.5 rounded-md border border-slate-200 bg-slate-50/60 px-2 py-1.5 text-[12px] */
+.sx-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius-md);
+  background: rgba(254, 248, 244, 0.6);
+  font-size: var(--sx-fs-12);
+}
+/* filter-chips.tsx "Filters" label: text-[10px] font-semibold uppercase tracking-wide text-slate-500 */
+.sx-chips-label {
+  font-size: var(--sx-fs-10);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: var(--sx-ink-500);
+}
+/* filter-chips.tsx pill: rounded-full border border-indigo-200 bg-white px-2 py-0.5 text-indigo-700 */
+.sx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--sx-maroon-200);
+  border-radius: var(--sx-radius-full);
+  background: var(--sx-surface);
+  color: var(--sx-maroon-700);
+  font-size: var(--sx-fs-12);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+/* filter-chips.tsx pill hover: hover:border-indigo-300 hover:bg-indigo-50 */
+.sx-chip:hover {
+  border-color: var(--sx-maroon-300);
+  background: var(--sx-maroon-50);
+  color: var(--sx-maroon-700);
+}
+/* filter-chips.tsx "Clear all": ml-1 text-[11px] font-medium text-slate-500 hover:underline */
+.sx-chips-clear {
+  margin-left: 4px;
+  font-size: var(--sx-fs-11);
+  font-weight: 500;
+  color: var(--sx-ink-500);
+  text-decoration: none;
+  cursor: pointer;
+}
+.sx-chips-clear:hover {
+  color: var(--sx-ink-700);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* --- Sidebar rail ------------------------------------------------------- */
+/* sidebar.tsx DesktopSidebar: askmira-rail flex-col border-r border-white/10 text-white w-[12.5rem] */
+.sx-rail {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: var(--sx-rail-width);
+  height: 100%;
+  min-height: 100vh;
+  background-image: var(--sx-rail-gradient);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transition: width 0.2s ease-out;
+}
+/* sidebar.tsx collapsed: w-14 */
+.sx-rail.sx-rail-collapsed {
+  width: var(--sx-rail-width-collapsed);
+}
+/* sidebar.tsx Brand: flex items-center gap-2 border-b border-white/10 px-3 py-3 */
+.sx-rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+}
+/* sidebar.tsx NavList: min-h-0 flex-1 overflow-y-auto px-2 py-2, groups gap-3 */
+.sx-rail-nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* sidebar.tsx group h3: px-2 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50 */
+.sx-rail-section {
+  margin: 0;
+  padding: 2px 8px 4px;
+  font-size: var(--sx-fs-10);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.5);
+}
+/* sidebar.tsx link: flex gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium text-white/80 hover:bg-white/10 */
+.sx-rail-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 2px;
+  padding: 6px 10px;
+  border-radius: var(--sx-radius-md);
+  font-size: var(--sx-fs-13);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.sx-rail-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+/* sidebar.tsx active link: bg-marigold-500 font-semibold text-[#100404] shadow-sm */
+.sx-rail-item.sx-active,
+.sx-rail-item.active {
+  background: var(--sx-marigold-500);
+  color: var(--sx-ink-950);
+  font-weight: 600;
+  box-shadow: var(--sx-shadow-sm);
+}
+.sx-rail-collapsed .sx-rail-item {
+  justify-content: center;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+/* sidebar.tsx CollapseToggle: border-t border-white/10 px-3 py-2 text-[11px] text-white/70 hover:bg-white/10 */
+.sx-rail-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: var(--sx-fs-11);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+.sx-rail-footer:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* --- Top header --------------------------------------------------------- */
+/* header.tsx: sticky top-0 z-30 h-12 border-b border-slate-200/80 bg-white/85 px-3 backdrop-blur-md sm:px-5 */
+.sx-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 48px;
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(240, 226, 216, 0.8);
+  background: rgba(255, 255, 255, 0.85);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+@media (min-width: 640px) {
+  .sx-topbar {
+    padding: 0 20px;
+  }
+}
+/* header.tsx search trigger: h-7 max-w-md rounded-md border border-slate-200 bg-white px-2 text-[12px] text-slate-500 */
+.sx-topbar-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 28rem;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius-md);
+  background: var(--sx-surface);
+  font-size: var(--sx-fs-12);
+  color: var(--sx-ink-500);
+  cursor: pointer;
+}
+.sx-topbar-search:hover {
+  border-color: var(--sx-cream-300);
+  background: var(--sx-cream-50);
+}
+/* header.tsx kbd: rounded border border-slate-200 bg-slate-50 px-1 text-[10px] font-medium text-slate-500 */
+.sx-kbd {
+  padding: 0 4px;
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius-sm);
+  background: var(--sx-cream-50);
+  font-size: var(--sx-fs-10);
+  font-weight: 500;
+  color: var(--sx-ink-500);
+}
+/* header.tsx right cluster: flex items-center gap-3 */
+.sx-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* --- Drawer ------------------------------------------------------------- */
+/* drawer.tsx root: fixed inset-0 z-50 */
+.sx-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+/* drawer.tsx backdrop: absolute inset-0 bg-black/50 */
+.sx-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+/* drawer.tsx panel: absolute inset-y-0 right-0 w-full max-w-md flex-col border-l bg-white shadow-xl */
+.sx-drawer-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 28rem;
+  border-left: 1px solid var(--sx-border);
+  background: var(--sx-surface);
+  box-shadow: var(--sx-shadow-xl);
+  animation: sx-drawer-in 0.2s ease-out;
+}
+/* drawer.tsx widthClass override max-w-2xl for wide forms */
+.sx-drawer-panel.sx-drawer-wide {
+  max-width: 42rem;
+}
+@keyframes sx-drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+/* drawer.tsx header: flex items-start justify-between gap-3 border-b px-5 py-4 */
+.sx-drawer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--sx-border);
+}
+/* drawer.tsx title: text-base font-semibold tracking-tight */
+.sx-drawer-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--sx-ink-900);
+}
+/* drawer.tsx description: mt-0.5 text-xs text-slate-500 */
+.sx-drawer-description {
+  margin: 2px 0 0;
+  font-size: var(--sx-fs-12);
+  color: var(--sx-ink-500);
+}
+/* drawer.tsx body: flex-1 overflow-y-auto px-5 py-4 */
+.sx-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+/* drawer.tsx footer: border-t px-5 py-4 */
+.sx-drawer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--sx-border);
+}
+
+/* --- Empty state and skeleton ------------------------------------------- */
+/* page empty state: flex flex-col items-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center */
+.sx-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  border: 1px dashed var(--sx-cream-300);
+  border-radius: var(--sx-radius-lg);
+  background: var(--sx-cream-50);
+  text-align: center;
+  font-size: var(--sx-fs-13);
+  color: var(--sx-ink-500);
+}
+/* inline empty state in a card: rounded-md border-dashed border-slate-200 bg-slate-50/60 px-3 py-5 text-[12px] */
+.sx-empty-inline {
+  padding: 20px 12px;
+  border: 1px dashed var(--sx-border);
+  border-radius: var(--sx-radius-md);
+  background: rgba(254, 248, 244, 0.6);
+  text-align: center;
+  font-size: var(--sx-fs-12);
+  color: var(--sx-ink-500);
+}
+/* empty state title: text-[13px] font-semibold text-slate-900 */
+.sx-empty-title {
+  margin: 0 0 4px;
+  font-size: var(--sx-fs-13);
+  font-weight: 600;
+  color: var(--sx-ink-900);
+}
+/* loading.tsx skeleton: animate-pulse rounded bg-slate-200 */
+.sx-skeleton {
+  display: block;
+  height: 16px;
+  border-radius: var(--sx-radius-sm);
+  background: var(--sx-cream-200);
+  animation: sx-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes sx-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* --- Text helpers ------------------------------------------------------- */
+/* muted text: text-[12px] text-slate-500 */
+.sx-muted {
+  font-size: var(--sx-fs-12);
+  color: var(--sx-ink-500);
+}
+/* small meta text: text-[11px] text-slate-400 (timestamps, footnotes) */
+.sx-small {
+  font-size: var(--sx-fs-11);
+  color: var(--sx-ink-400);
+}
+/* body text: text-[13px] text-slate-700 */
+.sx-text {
+  font-size: var(--sx-fs-13);
+  color: var(--sx-ink-700);
+}
+/* eyebrow label: text-[10px] font-semibold uppercase tracking-wide text-slate-500 */
+.sx-eyebrow {
+  font-size: var(--sx-fs-10);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: var(--sx-ink-500);
+}
+/* money and counts: font-mono tabular-nums */
+.sx-mono {
+  font-family: var(--sx-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+/* single-line ellipsis: truncate */
+.sx-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* status text colours: text-emerald-700 / text-amber-700 / text-rose-700 */
+.sx-text-positive {
+  color: var(--sx-positive-700);
+}
+.sx-text-warning {
+  color: var(--sx-warning-700);
+}
+.sx-text-negative {
+  color: var(--sx-negative-700);
+}
