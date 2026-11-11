@@ -29,6 +29,15 @@ Reply to the user in Hinglish. Prompts / code / OutSystems names in English.
 18. Salenix_DevTools is a temporary test harness; never deploy it beyond Development; delete it when the Salenix UI app covers these flows. (Web App created by the user on 2026-11-11, references the public Foundation service actions, role SalenixUser and the Salenix theme; one screen TestConsole; no entities, no business logic.)
 19. DevOnly_AddMember and Setting DevToolsEnabled must be deleted before any QA deployment. (Salenix_Foundation, added 2026-11-11 as a DevTools helper: DevToolsEnabled is a secret Text Setting, default empty; DevOnly_AddMember(Email, RoleCode) is Public = Yes, runs only when Settings.DevToolsEnabled = "true" and the caller has manageMembers.)
 20. Theme v2 (rev 3): theme/salenix-theme.css is the only CSS; theme/THEME-GUIDE.md is the class list every UI prompt must use; fonts by Google Fonts @import (allow fonts.googleapis.com and fonts.gstatic.com if a CSP is ever enabled).
+21. Long-run review decisions (2026-11-11):
+   a) Workspace delete = soft delete: Tenant.DeletedAt; every domain app gets a nightly purge timer for tenants deleted > 30 days ago; Foundation removes the Tenant row last. PENDING (build with Salenix_Admin). Needed because cross-app TenantId references allow only delete rule Ignore.
+   b) Keep the Foundation approval engine AND the source status columns (Deal.ApprovalStatus/ApprovedBy/ApprovedAt, DealCreditTerm ApprovedBy/ApprovedAt); Sales/Finance keep them in sync with ApprovalRequest.
+   c) Reject reason is required (deliberate difference from the source, where it is optional).
+   d) D4: no deal may be in Hold without HoldReason and HoldRevisitOn on any write path (create, update, change stage). D5: HoldRevisitOn must be today or later (workspace date, Foundation_TodayFor). D7, D16, D19: follow the source unless the BRD states a rule (choices listed in LONG-RUN-REPORT.md).
+   e) Private Foundation_EnsureProfileCore is shared by Foundation_EnsureMyProfile and Invitation_Accept (behaviour unchanged).
+   f) Contact email uniqueness is checked on create, update and restore (source: create only).
+   g) Invitation AcceptLink = Settings.AppBaseUrl + "/AcceptInvite?token=" + Token (ODC screen URL). AppBaseUrl (Development) = https://vtpl-dev.outsystems.app/Salenix (set by the user).
+   h) UserProfile Public = Yes (read-only for other apps); Membership stays Public = No; role lookups from other apps go through Member_GetRole(TargetUserId) (acting tenant only).
 
 ## App map and entities (70: 69 after 12 approved merges + DealOrderProof; app merges 2026-11-11)
 Merges: Workflow → Salenix_Foundation; Performance → Salenix_Finance; Ask Mira → Salenix_Agent. Salenix and Salenix_Admin stay separate. All apps below created by hand by the user (read-only check 2026-11-11 passed).
