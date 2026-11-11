@@ -237,3 +237,29 @@ Self-check: service action Sales_StageSelfCheck (Public = Yes, no data access) �
 Created: 9 helper server actions (Function = Yes, Public = No) with exactly the planned expressions (Mentor report quotes each If-chain); service action Sales_StageSelfCheck (Public = Yes, 89 checks = 10 inputs × 8 helpers + 9 rollback pairs); user exceptions SalesError and ValidationError (first one created as StageSelfCheckError, renamed in the one corrective prompt so that all Sales errors use the "SALES_ERROR: " / "VALIDATION_ERROR: " codes, decision 13).
 Deviation: helpers have no handler (pure functions, allowed by ODC). A service action cannot re-raise the generic exception → handler raises SalesError with the original message (prefixed with "SALES_ERROR: " when missing).
 Test for you (DevTools, after adding the Salenix_Sales reference): call Sales_StageSelfCheck → Passed True, FailedCount 0, Report "All 89 checks passed." Any FAIL line names the function, input, expected and actual value.
+
+## S6 Sales Company actions — PLAN
+Source: notes/company-contact-spec.md §A (companies/actions.ts, lib/companies/*, lib/dedup/*). Public service actions (consumed by the Salenix UI app); shared logic in private server actions (a service action cannot call a service action of its own app).
+Shared private server actions (also used by S7/S8):
+| Element | Rules |
+|---|---|
+| Sales_Context → ActingUserId, ActingTenantId, RoleCode, Persona | calls Salenix_Foundation Foundation_GetMyContext (raises MEMBERSHIP_MISSING when no active workspace) |
+| Sales_RequirePermission(RoleCode, PermissionCode) | Foundation_HasPermission; false → ValidationError `VALIDATION_ERROR: Permission denied: requires "<perm>" (current role: <role>)` (source auth-guard.ts:22) |
+| Sales_WriteActivity(TenantId, ActorUserId, EntityType, EntityId Text, Action, Metadata) | CreateActivityLog, CreatedAt = now |
+| Company_RefreshRollups(TenantId, CompanyId) | recompute the 8 attributes from aggregates (DealCount non-deleted; OpenDealCount stage not won/lost; WonDealCount; OpenPipelineValueMinor / WonLifetimeValueMinor sums; TopStage = most recently updated open deal; ContactCount non-deleted non-merged; LastActivityAt = max(company ActivityLog, company Note, deal UpdatedAt)) — source VIEW 0065 |
+| Company_FindMatches(TenantId, Name) → Matches (CompanyMatchItem: CompanyId, Name, Domain, Score, Kind exact/fuzzy) | Norm = Salenix_Crypto NormalizeCompanyName(Name); Length(Norm) < 2 → empty; candidates: tenant, DeletedAt null, MergedIntoId null, NormalizedName <> ""; exact = NormalizedName = Norm; score = max(TrigramSimilarity(stored, Norm), WordSimilarity(Norm, stored)); keep exact or score ≥ 0.55; sort exact first then score desc; top 5 (decision 9, queries.ts:39-82) |
+Service actions (all: Sales_Context first; return Success / OutcomeCode / Message / FailedRules where several non-error results exist):
+| Action | Rules |
+|---|---|
+| Company_FindSimilar(Name) → Matches | manageCompanies; flag DedupEnabled off (Foundation_GetFlags) → empty; else FindMatches |
+| Company_Create(Name, Domain, Industry, OwnerId, DedupOverride) → Success, OutcomeCode, Message, FailedRules, CompanyId, Matches | manageCompanies; Name trim required "Name is required", ≤ 200 "Name must be 200 characters or fewer"; Domain ≤ 255, Industry ≤ 100 (empty → ""); validation fail → Success False, OutcomeCode validation, Message "Please fix the highlighted fields.", FailedRules = field messages; **server-side dedup** (source trusts the client — fix): flag on and not DedupOverride and matches found → Success False, OutcomeCode duplicate_warning, Matches; NormalizedName = NormalizeCompanyName; persona sales → OwnerId must be self or empty ("You can only assign records to yourself.") (scope rule, stricter than source); create; rollups zero; activity created {name} (+ dedup_override when DedupOverride and matches existed); OutcomeCode ok / ok_dedup_override |
+| Company_Update(CompanyId, Name, Domain, Industry, OwnerId) | manageCompanies; same validation; row in tenant, not deleted, (sales persona: own or unassigned) else "Company not found in this tenant."; **NormalizedName recomputed on rename** (BRD fix; source stale); OwnerId change → activity owner_changed {name, from, to} + Foundation Notification_Create to the new owner "You now own <name>" (when not the actor); else activity updated {name}; UpdatedBy/At |
+| Company_SoftDelete(CompanyId) | deleteCompanies; active row else "Company not found or already deleted."; DeletedAt/By; children untouched (source); activity deleted |
+| Company_Restore(CompanyId) | restoreCompanies; deleted row in tenant else "Company not found in this tenant." (stricter: source restores active rows too); clear DeletedAt/By; activity restored |
+| Company_Get(CompanyId) → Item (CompanyItem incl. rollups) | scope: sales persona own or unassigned (stricter than source detail page); not deleted, not merged |
+| Company_List(Search, OwnerFilter mine/unassigned/"", IncludeDeleted, SortBy recent/deals/pipeline/won/activity, SortDesc, StartIndex, MaxRecords) → Items, TotalCount | scope; Search = Name contains (source name only); IncludeDeleted → deleted rows only (source listDeletedCompanies) for deleteCompanies roles; MaxRecords 25/50/100 else 50 |
+Not built: hard delete (owner-only, not in the queue), merge, realtime events, embeddings/workflow events.
+
+### Progress S6 (not yet published)
+- Part A done in the Mentor session (no errors): structures CompanyMatchItem, CompanyItem; private Sales_Context (Foundation_GetMyContext from a server action works in ODC), Sales_RequirePermission, Sales_WriteActivity, Company_RefreshRollups (8 aggregates as in VIEW 0065; counts via LongIntegerToInteger), Company_FindMatches (≤ 2000 candidates, exact list + fuzzy list sorted by score, top 5).
+- Part B (FindSimilar, Create, Update) sent.
