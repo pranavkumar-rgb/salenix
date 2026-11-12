@@ -1131,3 +1131,21 @@ Source: notes/overnight-N-source-specs.md §N6 (lib/dashboard/kpis.ts, range.ts,
 - NEW public service action Dashboard_GetKpis(RangeCode, FromDate, ToDate, OwnerUserId) → RangeFrom, RangeTo, RangeLabel, TotalPipelineMinor, WeightedPipelineMinor, WonCount, LostCount, WonValueMinor, WinRatePct, AvgDealSizeMinor, AvgCycleDays, CompanyCount, ContactCount, ActiveDealCount, StageTotals (StageTotalItem List), RevenueTrend (TrendWeekItem List). Aggregates GetOpenByStage, GetClosed, GetCompanyCount, GetContactCount, GetActiveDeals, GetAllByStage, GetCreatedInRange; week index = Trunc(DiffDays(FirstWeek, Monday of date) / 7) with bounds check.
 Read-back: full node text, every If / loop target; validation 0 errors (known warnings). Read-only action → safe to call in Vizion.
 Tests: Dashboard_GetKpis() as owner → last 90 days, counts equal Companies / Contacts / Deals screens; StageTotals 7 rows; RevenueTrend ≈ 14 weeks; RangeCode "custom" FromDate > ToDate → falls back to last 90 days; as member → numbers only for own deals.
+
+## N7 full pipeline board — PUBLISHED Sales rev 27 (env_app verified 2026-11-12 23:24 UTC)
+Source: notes/overnight-N-source-specs.md §N7 (lib/deals/queries.ts 710-1054, board-view.tsx, board-column.tsx, deal-card.tsx, lib/deals/slip.ts). Deal_ListPipeline NOT changed.
+### Parity checklist
+| # | Item | Source | Rebuild (Deal_ListBoard) | Status |
+|---|---|---|---|---|
+| 1 | Columns | all 7 in order lead … lost; stage filter hides others; Hold hidden when empty, collapsed when not | 7 columns, StageCodes filter; Hold returned even when empty (UI hides / collapses) | same (hide = UI) |
+| 2 | Won / Lost bound | not time-bounded | same | same |
+| 3 | Cards | updated_at desc, id desc, 50 per column; more via cursor | same, 50; IsCapped flag; no per-column paging | same / paging backlog |
+| 4 | Column totals | over all matching deals: count, amount, slipped (push_count ≥ 1) count + amount; weighted = round(amount × probability / 100) | DealCount, ValueMinor, WeightedMinor, SlippedCount, SlippedMinor, SlippedWeightedMinor, ProbabilityPct (Stage_DefaultProbability) | same (no workspace probability overrides) |
+| 5 | Filters | list filters minus offerings; risk via score floor | Search (deal / company name), OwnerUserId, Unassigned, SlippedOnly, ScoreBand, CompanyId + persona scope | same subset (risk / amount / close filters: backlog) |
+| 6 | Card flags | overdue (close < today, open), slip severity none / watch / severe (push ≥ 3 or slip ≥ 30 days), de-weighted (quota_weight < 1), rolled back (rollback_count > 0), health band | IsOverdue (workspace today), SlipSeverity, IsDeweighted, RollbackCount, HealthBand | same |
+| 7 | Card contact name, drag-and-drop | yes | not built (UI / L3) | backlog |
+### Elements (rev 27)
+- NEW public structures BoardCardItem (DealId, Title, CompanyId, CompanyName, StageCode, ValueMinor, CurrencyCode, ExpectedCloseDate, OwnerUserId, OwnerName, ApprovalStatus, HealthBand, PushCount, TotalSlipDays, SlipSeverity, IsOverdue, IsDeweighted, RollbackCount, UpdatedAt) and BoardColumn (StageCode, StageLabel, ProbabilityPct, DealCount, ValueMinor, WeightedMinor, SlippedCount, SlippedMinor, SlippedWeightedMinor, IsCapped, Cards).
+- NEW public service action Deal_ListBoard(Search, OwnerUserId, Unassigned, StageCodes, SlippedOnly, ScoreBand, CompanyId) → Columns. GetBoardTotals (group by stage, Σ amount, Σ slipped flag, Σ slipped amount) once; per stage: Col = EmptyCol, totals, ListAppend column, GetStageCards (Max 50), IsCapped, cards appended to Columns[Columns.Length − 1].Cards (fix in the same session: the first version cleared Col.Cards after appending the column — possible shared nested list; now append-first, same reset pattern as Deal_ListPipeline).
+Read-back: full node text and every loop / If target; validation 0 errors. Read-only action.
+Tests: Deal_ListBoard() → 7 columns, Won / Lost included; counts = Deal_List per stage; a stage with > 50 deals → IsCapped True and 50 cards; WeightedMinor of Proposal = 60 % of ValueMinor; StageCodes "won,lost" → 2 columns; every column shows only its own cards (checks the nested-list pattern).
