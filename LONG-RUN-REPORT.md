@@ -1037,3 +1037,38 @@ Source: notes/overnight-N-source-specs.md §N3 (lib/deals/filters.ts + queries.t
 - Contact_List: NEW optional inputs RecentActivityDays, CreatedWithinDays; locals RecentSince, CreatedSince, RecentContactIds; If RecentActivityDays > 0 (True → GetRecentContactActivity → For Each → final comma → GetContacts; False → GetContacts); GetContacts filters 9–10.
 Read-back: every filter text, both If branches and the loop targets checked; validation 0 errors (known warnings only).
 Tests (read-only, any workspace): Deal_List(PoMissing True) → only Won deals without a matching PO; StageCodes "lead,qualified" → both stages; OwnerUserIds = one id → same as OwnerUserId; SortBy "value" SortDir "asc" → smallest first; StaleOnly → open deals not updated for 14 days; Company_List(Stale True) → companies without activity in 30 days (imported companies with no activity included); Contact_List(RecentActivityDays 14).
+
+## N4 tasks — PUBLISHED Sales rev 24 (env_app verified 2026-11-12 22:46 UTC)
+Source: notes/overnight-N-source-specs.md §N4 (app/dashboard/tasks/actions.ts, lib/tasks/queries.ts + filters.ts, db/schema/tasks.ts).
+### Parity checklist
+| # | Item | Source | Rebuild | Status |
+|---|---|---|---|---|
+| 1 | Permission | manageDeals on every task action, no owner check | manageDeals + persona scope (sales: assigned to me or unassigned) on list AND writes | different on purpose (addendum scope) |
+| 2 | List filters | search title, status list, priority list, assignedToMe, unassigned, dueWithinDays (incl. overdue), overdue (not completed / cancelled), entity panel (type + id, 50) | Task_List Search, StatusCodes, PriorityCodes, Mine, Unassigned, DueWithinDays, Overdue, EntityType + EntityId; page 25/50/100 default 50; dates vs Foundation_TodayFor | same (workspace date) |
+| 3 | List sort | created_at desc, id desc | same | same |
+| 4 | Linked name | deal name / company name / "First Last" or email | LinkedName via 3 left joins with EntityType in the join condition | same |
+| 5 | Title / description length | 280 / 4000 | 250 / 2000 (CrmTask column sizes) | different on purpose (columns) |
+| 6 | Codes | status todo/in_progress/completed/cancelled (default todo); priority low/medium/high/urgent (default medium); type call/email/meeting/internal/followup; recurrence daily/weekly/custom | same, messages "Pick a valid …" (source = zod enum errors) | same |
+| 7 | Create | created_by actor; activity task created {taskTitle, taskPriority, dueDate, linked*}; notify assignee ≠ actor "New task: <title>", subtitle "Due <date>"; email to assignee | same; no email (Integration not built) | same / email not possible yet |
+| 8 | Full update | writes title, description, status, priority, due, assignee, entity — NOT type / recurrence / stage_blocking (source quirk) | Task_Update writes ALL fields incl. type / recurrence / stage blocking | different on purpose (source bug: edits silently dropped) — OPEN QUESTION |
+| 9 | Completed_at | now on first completion; kept otherwise (not cleared on reopen via full update) | same | same |
+| 10 | Activity on update | task_completed if just completed, else updated {taskTitle, previousStatus, status} | same | same |
+| 11 | Notifications on update | reassigned to someone ≠ actor: "Reassigned to you: <title>"; just completed and creator ≠ actor: "Task completed: <title>" to creator | same | same |
+| 12 | Toggle | no-op when already in target state; complete → completed + now; reopen → todo + completed_at null | Task_SetCompleted(TaskId, Completed): "unchanged" outcome for the no-op; same writes | same |
+| 13 | Recurrence | on every transition into completed: new task (copy, todo, created_by actor), due = old due or today + 1 day / + 7 days / + 1 month (custom); activity created {recurredFrom} | private Task_SpawnNext, called by Task_Update and Task_SetCompleted; SpawnedTaskId output | same |
+| 14 | Delete | soft delete, idempotent, activity deleted {taskTitle} | Task_Delete same | same |
+| 15 | Inline patch updateTaskFieldsAction | yes | not built (Task_Update covers it) | backlog |
+| 16 | Task comments (task_comments table) | separate table | NOT built — Sales has no TaskComment entity (Comment.EntityType "task" is the CLAUDE.md design); Comment_* in N5 accept only deal/company/contact | OPEN QUESTION |
+| 17 | Home "My tasks" summary (open / overdue / completed this week / top 5 upcoming) | yes | not built (Task_List Mine + Overdue covers counts via TotalCount) | backlog |
+### Elements (rev 24)
+| Element | Kind |
+|---|---|
+| TaskItem (Id, Title, Description, StatusCode, PriorityCode, TypeCode, RecurrenceCode, StageBlocking, DueDate, IsOverdue, AssignedUserId, AssigneeName, CreatedBy, CompletedAt, EntityType, EntityId, LinkedName, CreatedAt, UpdatedAt) | NEW public structure |
+| Task_List(Search, Mine, Unassigned, EntityType, EntityId, StatusCodes, PriorityCodes, Overdue, DueWithinDays, StartIndex, MaxRecords) → Items, TotalCount | NEW public service action |
+| Task_Create(Title, Description, StatusCode, PriorityCode, TypeCode, RecurrenceCode, StageBlocking, DueDate, AssignedUserId, EntityType, EntityId) → Success, OutcomeCode (ok / validation), Message, FailedRules (Text "; "-joined, as Company_Create), TaskId | NEW public service action |
+| Task_Update(TaskId + same inputs) → Success, OutcomeCode (ok / validation / not_found), Message, FailedRules, SpawnedTaskId | NEW public service action |
+| Task_SetCompleted(TaskId, Completed) → Success, OutcomeCode (ok / unchanged / not_found), Message, SpawnedTaskId | NEW public service action |
+| Task_Delete(TaskId) → Success, OutcomeCode (ok / not_found), Message | NEW public service action |
+| Task_Validate, Task_SpawnNext | NEW private server actions |
+Read-back: full node text of all actions, every If branch target checked; validation 0 errors (known warnings).
+Tests (CGB India only): Task_Create("Call CFO", PriorityCode "high", DueDate today−1, AssignedUserId = other member) → ok + notification "New task: Call CFO"; Task_List(Overdue True) lists it with IsOverdue True; Task_Create(RecurrenceCode "weekly", DueDate D) → Task_SetCompleted(id, True) → SpawnedTaskId > 0, new task due D+7, status todo; again → "unchanged"; Task_SetCompleted(id, False) → status todo, CompletedAt empty; Task_Delete twice → ok both; Title "" → validation "Title is required"; as viewer → permission denied manageDeals.
