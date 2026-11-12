@@ -970,3 +970,12 @@ Read-back (fresh session cb9a744d, Salenix 35 / UIKit 8 / Theme 7): 29 Icon widg
 - Browser check (user): rail logo 22px with the full wordmark, Login logo 36px, all icons visible, one arrow on the chips; EmptyState Font Awesome classes still render (empty Deals list shows the briefcase) → EmptyState item closed.
 - Validation rev 36: 0 errors, 30 warnings = 27 "icon not available in the current icon library (Phosphor2.0)" (now on the Phosphor names; icons render) + Login UI_StartSession + 2 unused client actions. Logged as a low open item in CLAUDE.md (re-select the icons in the next Mentor change of Salenix).
 - New Parity backlog rows: L24 global search (Ctrl K), L25 rail Collapse button.
+
+## T10 fix + customer import (2026-11-13)
+| Step | App / rev | Result |
+|---|---|---|
+| T10 fix | Foundation 29, DevTools 19 | DevOnly_AddMember builds the profile from UserId (pending-registration users are not visible in the User entity); T10 shows real reasons. TESTED: 4 founder accounts created and signed in. |
+| Core refactor | Sales 20 | Deal_CreateCore / Company_CreateCore / Contact_CreateCore private; Deal_Create / Company_Create / Contact_Create = Sales_Context → Core (signatures unchanged). T8 recheck pending. |
+| Import | Sales 20–21, DevTools 19–20 | DevOnly_ImportBatch + T11. Fixes: T11 Text Area Max Length 500 → none (DevTools 20); swapped companies / deals Switch targets (Sales 21). |
+| T11 run (Vizion, owner = importer) | — | TESTED: 72 batches; companies 250 created, contacts 437, notes 437, deals 249 (lead, 0 INR), deal-contact links 437, failed 0. Re-run idempotency check: not reported yet. |
+Source file: data/salenix-import-contacts.json (git-ignored; counts only here).
