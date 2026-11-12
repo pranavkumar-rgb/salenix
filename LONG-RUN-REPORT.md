@@ -841,3 +841,46 @@ No screen should error with the demo data: no Get call with Id 0 (forms skip Dea
 | StageChangeDrawer | backdrop event OnClick → onclick (same as MainLayout) |
 Not done in A7 (needs a visual check in the browser; no screenshots possible through the MCP): spacing / heading comparison with the source pages.
 Validation 0 errors, 1 warning (Login public screen calls UI_StartSession — expected).
+
+---
+# Run 2026-11-12 morning — UI parity fixes P1–P7 (Salenix only, standing approval, hard stop 9:15)
+Mentor session dd6e4202. No Sales / Foundation / reference change. Start: Salenix rev 13.
+
+## Parity backlog (after demo)
+Every L item from the Step 1 parity table, with the server change it needs (none of these can be done UI-only).
+| # | Screen | Missing vs source | Server change needed |
+|---|---|---|---|
+| L1 | Deals list | Contact column, risk score / band, offering chip, Created column | DealListItem + ContactName, RiskScore, RiskBand, OfferingName, CreatedAt (Sales Deal_List / Deal_ListPipeline) |
+| L2 | Deals list | Chips Unassigned, Stale only, Won · PO missing, Revisit due, Slipped only; amount range, close-date range, company filter, score filter | Deal_List inputs Unassigned, StaleDays, PoMissing, RevisitDue, SlippedOnly, AmountMinorMin/Max, CloseFrom/To, CompanyIds, ScoreBand |
+| L3 | Pipeline | Won / Lost columns, weighted total and at-risk total per column, card contact name, drag-and-drop | Deal_ListPipeline: closed columns (opt-in), WeightedMinor + AtRiskMinor per PipelineColumn, ContactName on DealListItem |
+| L4 | Home (admin) | Admin KPI set (weighted pipeline, win rate, avg deal size, avg sales cycle), revenue trend chart, stage donut, rep filter, range filter | Dashboard_GetSummary: WeightedPipelineMinor, WinRateBps, AvgDealSizeMinor, AvgCycleDays, monthly revenue trend list, Range + OwnerUserId inputs; companies / contacts counts as outputs (UI now uses Company_List / Contact_List TotalCount) |
+| L5 | Home | Persona-specific homes (manager team view, member "my work" with tasks) | tasks (CrmTask actions), team metrics (Finance TeamMetricSnapshot), per-rep summary |
+| L6 | Approvals | Recently approved / recently rejected lists, bulk approve / reject, margin % on the card | Deal_ListRecentDecisions(Days), Deal_ApproveMany / RejectMany; DealListItem + MarginBps |
+| L7 | Deal detail | Activity timeline, tasks, notes, comments, documents (FileAttachment), value split, deal score, risk score, relationship health, viewers, compose email, all deal contacts | ActivityLog / CrmTask / Note / Comment list + create actions; FileAttachment upload (Integration storage); DealValueSplit, DealScore, DealRiskScore read actions; DealContact list action |
+| L8 | Companies | Chip "Has active deals", Last activity + Created columns on the list, bulk select / bulk owner change / bulk delete | Company_List HasActiveDeals input; Company_BulkAssign / BulkSoftDelete (CompanyItem already has LastActivityAt / CreatedAt — column add is UI-only, left for after the demo) |
+| L9 | Contacts | Remaining chips (has email, recently added), bulk select / owner change / delete | Contact_List inputs; Contact_BulkAssign / BulkSoftDelete |
+| L10 | Lists | Server-side lookup lists (hold / rollback reasons, PO types) instead of client copies | Foundation Lookup_List(ListCode) service action |
+
+## Batch results (all published clean, 0 errors / 1 known warning: Login public screen; env_app verified each time)
+| Batch | Rev | Elements | Deviations / logged choices |
+|---|---|---|---|
+| P1 Sidebar | 14 | MainLayout: 8 rail widgets → If IfRailPersona (GetShell.Persona = "admin" or "manager" → ADMIN tree; else member tree "My Work" › Dashboard, My Deals, Pipeline + CRM) | Manager tree = admin tree (other MANAGER_NAV items do not exist). Persona values from Foundation: admin / manager / sales |
+| P2 Home | 15 | data actions GetGreeting (Workspace_ListMine, GetMyContext, System User first name), GetCounts (Company_List / Contact_List TotalCount); GreetingRow replaces PageHeader (client-side time of day); IfCountChips (admin only) | Lists called with MaxRecords 25 (Company_List coerces other sizes to 50); greeting falls back to "Hello." |
+| P3 Deals + Pipeline | 16 | GetWorkspaceName on both; ViewTabs List/Board (sx-btn secondary/ghost); subtitles; Deals columns Name · Stage · Amount · Company · Owner · Close date · Approval · Health; chips MineChip / PendingChip / ApprovedChip (ToggleMine / TogglePending / ToggleApproved) on the shared filter variables; old "Pipeline view" / "List view" links deleted | Chips styled as sx-btn primary (active) / secondary (theme sx-chip is for removable chips) |
+| P4 Pipeline cards | 17 | card class + sx-metric-success / -warning / -danger by HealthBand; IfCompany line; IsHoldExpanded, ExpandHold / CollapseHold, IfHoldCollapsed (HoldSummary) / IfHoldExpanded (Collapse link) | LOGGED: theme has no left-border class → closest = sx-metric-* tint (border + background) |
+| P5 Deal detail | 18 | AllDealsLink, HeaderSummaryLine, DealColumns = OutSystemsUI ColumnsMediumLeft (phone break); left: Deal Info (incl. governance + probability), Relationship, Context, Record; right: PO card, history error, Stage history, Close date changes, Audit log (re-created by copy; AddProofButton2 / SaveProofButton2 / CancelProofButton2 / IfHistoryError3) | LOGGED: 6 KPI tiles dropped (source has none; values in Deal Info + header line); left column ≈ 1/3 not 320px |
+| P6 Approvals | 19 | AllDealsLink, title "Deal approvals", ApprovalsSubtitle (source text), ApprovalsStack / ApprovalsList card list (buttons rebuilt, same screen actions + RejectReason) | Container = sx-page (no max-w-4xl class); Updated column + Pending badge dropped (not in source card) |
+| P7 Companies + Contacts | 20 | OwnerChips (MineChip / UnassignedChip, ToggleMine / ToggleUnassigned) replace OwnerDropdown on both; Companies columns Name · Industry · Open deals · Open · Won · Contacts · Owner; Contacts Name · Email · Title · Company · Phone · Owner · Created | Value kept as two columns Open / Won (fallback); OwnerFilter "all" = "" |
+| P8 review fixes | 21 | UI_HealthTone + "strong" → success, "moderate" → warning (source bands strong / moderate / at_risk); Approvals: old PageHeader "Deals" button deleted | — |
+
+## Read-back review (READ-ONLY, rev 20) — no High findings
+| # | Sev | Finding | Decision |
+|---|---|---|---|
+| 1 | Medium | Persona compared case-sensitively ("admin", "manager") | not a bug: Foundation ResolveContext returns lower-case admin / manager / sales |
+| 2 | Medium | UI_HealthTone did not know source bands strong / moderate | **fixed in rev 21**. Left: UI_HealthTone maps at_risk → warning (amber) while the board card uses danger (rose, as source) — align after the demo |
+| 3 | Medium | GetCounts passes Company_List OwnerFilter "all" | not a bug: Company_List accepts all / mine / unassigned (A4); failure only hides the chips |
+| 4 | Medium | My deals chip: owner dropdown may show "All owners" if Member_ListOptions lacks the current user | check in browser (Member_ListOptions returns every active member) |
+| 5 | Low | Rail shows member tree for a moment until GetShell loads (admin flash) | after demo |
+| 6 | Low | Companies / Contacts still fill unused OwnerOptions; Deals subtitle lost "N deals" count | after demo |
+| 7 | Low | DealDetail columns break only on phone (tablet keeps 2 columns); Relationship company is plain text | after demo |
+Checked OK: no List.Current on empty lists, NullDate guards, no Get with Id 0, new data-action reads behind fetched checks, copied PO form still bound to ReferenceNo / IssuedOn / BuyerName / SubtotalRupees / TaxRupees / ProofType, all Approve / Reject / Confirm / Cancel and PO buttons wired to the same screen actions with their arguments.

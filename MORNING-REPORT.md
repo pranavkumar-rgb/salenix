@@ -1,7 +1,7 @@
 # Morning report — Salenix UI app for the 10 AM demo (run 2026-11-11 night)
 
 ## What is live
-**App:** https://vtpl-dev.outsystems.app/Salenix — **Salenix rev 13** (Development, env_app verified 2026-11-11 19:55 UTC). Every batch A0–A7 was published clean (0 errors) and verified; nothing skipped, no batch failed. Sales was only read (Company_List bug check), not changed. No Studio publish, no Production, no GL_* app touched.
+**App:** https://vtpl-dev.outsystems.app/Salenix — **Salenix rev 21** after the 2026-11-12 parity run (see "Changes from the 2026-11-12 parity run" below); before that **rev 13** (Development, env_app verified 2026-11-11 19:55 UTC). Every batch A0–A7 was published clean (0 errors) and verified; nothing skipped, no batch failed. Sales was only read (Company_List bug check), not changed. No Studio publish, no Production, no GL_* app touched.
 
 | Batch | Screens | Rev |
 |---|---|---|
@@ -22,14 +22,25 @@ Details, source file per screen and deviations: LONG-RUN-REPORT.md, section "Run
 
 ## 10-minute demo click path (demo data in CGB India)
 1. **Home (1 min)** — KPI row: open pipeline, 23 open deals, won this month, closing in 30 days, overdue, pending approvals (≥ 1). Pipeline by stage bars. Click **[DEMO] Data centre migration** in Top open deals → deal detail.
-2. **Deal detail (2 min)** — path bar, value, close date, owner, governance card (pushes, slip days, quota weight), stage history and audit log at the bottom.
+2. **Deal detail (2 min)** — header line stage · value · close date, path bar; left column Deal Info (pushes, slip days, quota weight) and Relationship (company, contact, owner); right column order proofs, stage history, audit log.
 3. **Pipeline (2 min)** — menu Pipeline: 5 columns (Lead 5, Qualified 5, Proposal 5, Negotiation 5, Hold 3) with count + value. On **[DEMO] Paint shop robotics** (Proposal) choose Move stage → Qualified: the drawer asks for a rollback reason (pick "Requirement changed") → Move deal. Card moves back; the deal's audit log shows a rollback.
 4. **Order-proof check (2 min)** — open **[DEMO] Dealer portal revamp** (Negotiation, Maruti Suzuki, ₹48,00,000). Change stage… → Won → Move deal → the drawer shows **"Attach the client's PO (or other order confirmation) before marking this deal Won."** Close the drawer, **Add PO**: Purchase order, number PO/MSIL/2026/001, PO date = today, buyer "Maruti Suzuki India Ltd", value before tax 4800000, tax 864000 → Save PO. Change stage… → Won → Move deal → success (as owner it is auto-approved; badge "Approved").
 5. **Approvals (1 min)** — menu Approvals: **[DEMO] Forging dies retrofit** (₹2,75,000, Won, pending). Click **Approve** → "Deal approved." and the list empties. (To show Reject instead: Reject → reason → Confirm reject → the deal goes back to Negotiation.)
 6. **Companies (1 min)** — open **[DEMO] Tata Steel Ltd**: KPIs from the rollups, contacts, its deals. New company → type "[DEMO] Tata Steel Ltd" → Create company → **Possible duplicates** panel (exact match) with "Open existing" / "Create anyway" (needs DedupEnabled).
 7. **Contacts + notifications (1 min)** — Contacts list with company filter; bell in the top bar opens the notifications drawer (Mark all read).
 
+### Changes from the 2026-11-12 parity run (Salenix rev 14–21)
+- Menu depends on the role: owner/admin/manager see Workspace › Dashboard · Sales › Pipeline, Deals, Approvals · CRM › Contacts, Companies; member/viewer see "My Work" › Dashboard, My Deals, Pipeline · CRM (no Approvals).
+- Home starts with "Good morning, {name}." + workspace + Administrator pill; admin sees "12 companies · 25 contacts · 23 active deals" above the KPIs.
+- Deals and Pipeline have **List | Board** tabs top right; Deals has chips **My deals / Awaiting approval / Approved** (step 5 alternative: Deals → Awaiting approval chip shows the pending Won deal).
+- Pipeline: **Hold column is collapsed** ("Hold 3 · ₹… · parked · click to expand") — click it to show the 3 hold cards. Cards are tinted green / amber / red by health.
+- Deal detail (step 2): no KPI tiles any more; "← All deals" link, line "{Stage} · {amount} · close {date}", left column Deal Info (incl. governance: pushes, slip days, quota weight) / Relationship / Context / Record, right column Order proofs → Stage history → Close date changes → Audit log. Step 4 "Add PO" is now at the top of the right column.
+- Approvals (step 5): card list ("Deal approvals"), Approve / Reject on each card.
+- Companies / Contacts: owner dropdown replaced by chips My companies / My contacts / Unassigned; Contacts has a Created column.
+
 ## Known gaps (not built — say "next sprint")
+- Parity backlog (needs Sales / Foundation changes, listed in LONG-RUN-REPORT.md "Parity backlog (after demo)"): contact on deal cards, risk scores, admin KPI set + revenue trend, Won/Lost board columns, weighted totals, more deal chips (Unassigned, Stale, PO missing, Revisit due, Slipped), recently approved/rejected, bulk actions, activity/tasks/notes on deal detail.
+- Health tint on board cards is a full tinted border (theme has no left-border class); Approvals page uses the standard page width (theme has no narrow container).
 - No drag-and-drop on the board (Move stage dropdown instead); board shows only the 5 open stages (Won/Lost via Deals list "Include won/lost").
 - Order proofs: metadata only, no PO file upload / PDF reading; warning checks (buyer/supplier mismatch) not built (decision 22d).
 - Deal contacts: only the primary contact is shown (no DealContact list action in Sales). Contact detail has no deals list (DealListItem has no ContactId).
