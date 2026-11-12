@@ -975,7 +975,7 @@ Read-back (fresh session cb9a744d, Salenix 35 / UIKit 8 / Theme 7): 29 Icon widg
 | Step | App / rev | Result |
 |---|---|---|
 | T10 fix | Foundation 29, DevTools 19 | DevOnly_AddMember builds the profile from UserId (pending-registration users are not visible in the User entity); T10 shows real reasons. TESTED: 4 founder accounts created and signed in. |
-| Core refactor | Sales 20 | Deal_CreateCore / Company_CreateCore / Contact_CreateCore private; Deal_Create / Company_Create / Contact_Create = Sales_Context → Core (signatures unchanged). T8 recheck pending. |
+| Core refactor | Sales 20 | Deal_CreateCore / Company_CreateCore / Contact_CreateCore private; Deal_Create / Company_Create / Contact_Create = Sales_Context → Core (signatures unchanged). T8 recheck pending (2026-11-14, CGB India demo workspace). |
 | Import | Sales 20–21, DevTools 19–20 | DevOnly_ImportBatch + T11. Fixes: T11 Text Area Max Length 500 → none (DevTools 20); swapped companies / deals Switch targets (Sales 21). |
-| T11 run (Vizion, owner = importer) | — | TESTED: 72 batches; companies 250 created, contacts 437, notes 437, deals 249 (lead, 0 INR), deal-contact links 437, failed 0. Re-run idempotency check: not reported yet. |
+| T11 run (Vizion, owner = importer) | — | TESTED: 72 batches; companies 250 created, contacts 437, notes 437, deals 249 (lead, 0 INR), deal-contact links 437, failed 0. Re-run check TESTED (1 Companies): created 0, existing 250, failed 0. |
 Source file: data/salenix-import-contacts.json (git-ignored; counts only here).
