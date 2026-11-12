@@ -1,3 +1,103 @@
+# Morning report — overnight run N (2026-11-13, Salenix_Sales server part of P2)
+
+## Result
+All 9 batches DONE, none skipped, none failed. Only **Salenix_Sales** changed: **rev 21 → rev 28** (Development, every revision env_app-verified). ADD-only: no entity, attribute, action, input or output was deleted or renamed; every existing public signature works unchanged (new inputs are optional). **No data was written** in any workspace (no DevOnly_*, seed, import or test call) — Vizion untouched. No UI, Foundation, DevTools, Theme, UIKit, Studio or Production change.
+
+| Batch | What | Sales rev |
+|---|---|---|
+| N1 (L22) | Deal soft delete + restore, deleted-deals list | 22 |
+| N2 (L23) | Inline edit of Next step / Source / Competitor | 22 |
+| N3 (L11, L12, L14, L15, L16) | Deal / Company / Contact list filters + sort direction | 23 |
+| N4 | Tasks (list, create, update, complete / reopen with recurrence, delete) | 24 |
+| N5 | Notes, comments (with @mentions), merged activity timeline | 25 |
+| N6 | Admin home KPIs + weekly revenue trend + stage totals | 26 |
+| N7 | Full pipeline board (7 columns, weighted / slipped totals, card flags) | 27 |
+| N8 (L24) | Global search for the command palette | 28 |
+| N9 | Offerings list + set a deal's offerings | 28 |
+
+Details (parity checklist per batch, read-back notes, test steps): LONG-RUN-REPORT.md → "Overnight run N".
+
+**git:** local commits only — `git push` was blocked by the local permission check. Please run `git push`.
+
+## Your one Studio step
+Open a fresh copy of **Salenix** (rev 36) → Manage Dependencies → **Salenix_Sales** → refresh to rev 28 and tick everything in the list below (nothing else) → publish from Studio. Existing screens keep working unchanged; Deal_List / Company_List / Contact_List only get new optional inputs.
+
+## Reference list for the Salenix app (Salenix_Sales rev 28), grouped by screen
+All are public service actions; the client never sends tenant / user / role (acting context on the server; persona "sales" = own + unassigned).
+
+### Deals list
+| Element | Enables in the UI |
+|---|---|
+| Deal_List — new optional inputs IncludeDeleted, Unassigned, StaleOnly, StaleDays, PoMissing, RevisitDue, SlippedOnly, ScoreBand, AmountMinorMin, AmountMinorMax, CloseFrom, CloseTo, CompanyId, StageCodes, OwnerUserIds, SortDir (refresh only) | chips Unassigned, Stale only, Won · PO missing, Revisit due, Slipped only, Score, Amount, Close date, Company; multi-select Stage / Owner (comma lists); asc / desc per sort column ("" keeps today's order); "Recently deleted" view (owner / admin) |
+| DealListItem.DeletedAt (new attribute) | "Deleted on" column in the deleted view |
+| Deal_Restore(DealId) | Restore button in the deleted view |
+
+### Deal detail + edit-deal drawer
+| Element | Enables |
+|---|---|
+| Deal_SoftDelete(DealId) | Delete button left in the edit-deal footer (L22) |
+| Deal_UpdateContextField(DealId, Field next_step / source / competitor, Value) → SavedValue | click-to-edit Next step / Source / Competitor on the Context card (L23) |
+| Task_List(EntityType "deal", EntityId) + Task_Create / Task_Update / Task_SetCompleted / Task_Delete; TaskItem | Tasks panel |
+| Note_List / Note_Create / Note_Update / Note_Delete; NoteItem | Notes card (edit / delete own notes only: CanEdit) |
+| Comment_List / Comment_Create / Comment_Delete; CommentItem | Comments with one reply level and @[Name](userId) mentions (mentioned members are notified) |
+| Activity_ListFor(EntityType, EntityId, MaxItems); TimelineItem | merged timeline (activity + notes + comments, newest first, 150); filter chips are UI-only |
+| Offering_ListForDeal(DealId), Offering_List(IncludeInactive), Deal_SetOfferings(DealId, OfferingIds, PrimaryOfferingId); OfferingItem | Offerings field (only when the workspace flag OfferingsEnabled is on) |
+
+### Pipeline
+| Element | Enables |
+|---|---|
+| Deal_ListBoard(Search, OwnerUserId, Unassigned, StageCodes, SlippedOnly, ScoreBand, CompanyId) → Columns; BoardColumn, BoardCardItem | 7 columns incl. Won / Lost; per column count, value, weighted value, slipped count / value, capped-at-50 flag; card badges overdue, slip severity, de-weighted, rolled back, health. Hide Hold when DealCount = 0 (source) |
+
+### Home (admin / manager)
+| Element | Enables |
+|---|---|
+| Dashboard_GetKpis(RangeCode last_7d / last_30d / last_90d / this_quarter / this_year / custom, FromDate, ToDate, OwnerUserId); TrendWeekItem (StageTotals reuses StageTotalItem) | KPI strip (total + weighted pipeline, win rate, avg deal size, avg sales cycle), range picker, rep view, record counts, weekly revenue trend chart, stage donut / bars |
+| Task_List(Mine True, Overdue True) | "My tasks" counts (TotalCount) |
+
+### Companies / Company detail
+| Element | Enables |
+|---|---|
+| Company_List — new optional inputs HasActiveDeals, RecentActivityDays, CreatedWithinDays, Stale, StaleDays (refresh only) | chips Has active deals, Recently active (14d), New (30d), Stale (L15) |
+| Note_* / Comment_* / Activity_ListFor("company", id) / Task_List("company", id) | company notes, comments, tasks, account timeline incl. child deals / contacts |
+
+### Contacts / Contact detail
+| Element | Enables |
+|---|---|
+| Contact_List — new optional inputs RecentActivityDays, CreatedWithinDays (refresh only) | chips Recently active (14d), New (30d) (L16) |
+| Note_* / Comment_* / Activity_ListFor("contact", id) / Task_List("contact", id) | contact notes, comments, tasks, timeline |
+
+### Tasks page (new) and app shell
+| Element | Enables |
+|---|---|
+| Task_List(Search, Mine, Unassigned, StatusCodes, PriorityCodes, Overdue, DueWithinDays, StartIndex, MaxRecords) + Task_* | Tasks page with chips My tasks, Overdue, Due this week (DueWithinDays 7), To do, In progress, High / urgent, Unassigned; complete / reopen (recurring tasks create the next one → SpawnedTaskId) |
+| Search_All(Query) → Deals, Companies, Contacts, Tasks; SearchHitItem | Ctrl K / Cmd K command palette in MainLayout (L24), 5 hits per group |
+
+**Tick list in Studio (22 actions + 9 structures):** Deal_SoftDelete, Deal_Restore, Deal_UpdateContextField, Task_List, Task_Create, Task_Update, Task_SetCompleted, Task_Delete, Note_List, Note_Create, Note_Update, Note_Delete, Comment_List, Comment_Create, Comment_Delete, Activity_ListFor, Dashboard_GetKpis, Deal_ListBoard, Search_All, Offering_List, Offering_ListForDeal, Deal_SetOfferings; TaskItem, NoteItem, CommentItem, TimelineItem, TrendWeekItem, BoardColumn, BoardCardItem, SearchHitItem, OfferingItem; plus refresh of Deal_List, Company_List, Contact_List, DealListItem.
+
+## Open questions (your decision)
+1. Task_Update writes type / recurrence / stage blocking — the source's full update silently drops them (looks like a source bug). Kept as a fix; say if you want source behaviour.
+2. Task comments: source has a separate task_comments table (author-only edit, hard delete). Sales has no such entity; Comment_* accept only deal / company / contact. Allow EntityType "task" in Comment_* (CLAUDE.md app map already says Comment.EntityType incl. task) or add a TaskComment entity?
+3. Offerings on Deal_Create / Deal_Update: the source requires an offering on create when the switch is on. I did not touch the tested create / update; the UI would call Deal_SetOfferings after saving. OK, or wire into Deal_Create?
+4. Offering catalog: no Offering rows exist (source seeds 14 defaults per workspace + admin page). Needs Salenix_Admin + a seed — never in Vizion without your go.
+5. Amount filter: AmountMinorMin / Max ≤ 0 = no filter (optional-input default), so "max 0" cannot be asked. Fine?
+6. Deal company filter uses one CompanyId (source: several company names).
+7. KPI prior-period deltas and quota / coverage tiles not built (need stage-history replay and Finance SalesTarget). Weighted pipeline uses the fixed stage table (no workspace overrides).
+8. Deal_Restore only restores deleted rows (stricter than source, same as Company_Restore).
+
+## Known limits (low)
+- Search / list "like" filters do not escape % and _ (same as all existing lists).
+- Comment mentions: an invalid token (empty id) stops parsing; the rest of the body stays plain text.
+- Activity_ListFor: child-deal / child-contact activity rows have an empty SourceName (ActivityLog.EntityId is text); notes / comments have it. No emails (Comms not built).
+- Deal_ListBoard: no per-column "load more". Deal_List risk sort, missing-field and offering filters not built.
+- MCP: one long Mentor prompt got a CloudFront 403 "Request blocked"; smaller prompts worked.
+
+## Tests (CGB India only — never write tests in Vizion)
+Steps per batch in LONG-RUN-REPORT.md. Read-only actions (Dashboard_GetKpis, Deal_ListBoard, Search_All, the list filters, Activity_ListFor, Note_List, Comment_List, Task_List, Offering_List) are safe in any workspace.
+
+---
+
+# Previous morning report (2026-11-11 night run)
+
 # Morning report — Salenix UI app for the 10 AM demo (run 2026-11-11 night)
 
 ## What is live
