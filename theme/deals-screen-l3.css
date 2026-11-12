@@ -1,0 +1,134 @@
+/* L3 Deals toolbar + filter chips (Salenix app, Deals screen stylesheet only).
+   Source: deals-view.tsx ~798 (search row), deal-filter-bar.tsx ~160 (Chip / ToggleChip).
+   EMERGENCY CSS: move to Salenix_Theme with the other items in the open list. */
+
+/* search row: flex items-center gap-3 */
+.sx-dtoolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+/* relative flex-1 */
+.sx-dsearch {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* Search icon: absolute left-3 top-1/2 h-4 w-4 text-slate-400 */
+.sx-dsearch .sx-dsearch-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sx-ink-400);
+  font-size: 14px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 1;
+}
+/* w-full rounded-lg py-2 pl-9 */
+.sx-dsearch input.sx-input.sx-dsearch-input {
+  width: 100%;
+  padding-left: 36px;
+  border-radius: var(--sx-radius-lg);
+}
+
+/* filter row: flex flex-wrap items-center gap-1.5 */
+.sx-fbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+/* "Filter" label: mr-1 inline-flex gap-1 text-[11px] text-slate-500 */
+.sx-fbar-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 4px;
+  font-size: var(--sx-fs-11);
+  color: var(--sx-ink-500);
+}
+/* Chip: rounded-md border px-2 py-1 text-[11px] font-medium; idle border-slate-200 bg-white text-slate-600 */
+.sx-fbar .sx-fchip.sx-fchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--sx-border);
+  border-radius: var(--sx-radius-md);
+  background-color: var(--sx-surface);
+  color: var(--sx-ink-600);
+  font-size: var(--sx-fs-11);
+  font-weight: 500;
+  line-height: 1.4;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.sx-fbar .sx-fchip.sx-fchip:hover {
+  background-color: var(--sx-surface-muted);
+}
+/* active: border-indigo-200 bg-indigo-50 text-indigo-700 (maroon in Salenix) */
+.sx-fbar .sx-fchip.sx-fchip.sx-fchip-active {
+  border-color: var(--sx-maroon-200);
+  background-color: var(--sx-maroon-50);
+  color: var(--sx-maroon-700);
+}
+/* dropdown chips (Stage, Owner): native select with a small chevron, no data URI */
+.sx-fbar select.sx-fchip.sx-fchip {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 22px;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 11px) 55%, calc(100% - 7px) 55%;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+}
+/* Clear all: ml-auto px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 */
+.sx-fbar .sx-fbar-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: var(--sx-radius-md);
+  font-size: var(--sx-fs-11);
+  font-weight: 500;
+  color: var(--sx-ink-600);
+  text-decoration: none;
+  cursor: pointer;
+}
+.sx-fbar .sx-fbar-clear:hover {
+  background-color: var(--sx-surface-muted);
+  color: var(--sx-ink-900);
+}
+
+/* sortable column headers */
+.sx-th-sort {
+  cursor: pointer;
+  user-select: none;
+}
+.sx-th-sort:hover {
+  color: var(--sx-ink-900);
+}
+.sx-th-sort-active {
+  color: var(--sx-maroon-700);
+}
+
+@media (max-width: 640px) {
+  .sx-dtoolbar {
+    flex-wrap: wrap;
+  }
+  .sx-fbar .sx-fbar-clear {
+    margin-left: 0;
+  }
+}
