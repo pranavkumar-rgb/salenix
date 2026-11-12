@@ -1,0 +1,37 @@
+/* L3b Companies + Contacts toolbar (Salenix app, Companies and Contacts screen stylesheets; same text in both).
+   Source: companies-view.tsx ~413 (search row), contacts-view.tsx ~330, toggle-filter-bar.tsx ~79 (chips).
+   Rules 1-14 = copy of the L3 Deals rules (theme/deals-screen-l3.css); rules 15+ are new in L3b.
+   EMERGENCY CSS: move to Salenix_Theme with the other items in the open list. */
+
+.sx-dtoolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.sx-dsearch { position: relative; flex: 1 1 auto; min-width: 0; }
+.sx-dsearch .sx-dsearch-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--sx-ink-400); font-size: 14px; line-height: 1; pointer-events: none; z-index: 1; }
+.sx-dsearch input.sx-input.sx-dsearch-input { width: 100%; padding-left: 36px; border-radius: var(--sx-radius-lg); }
+.sx-fbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 16px; }
+.sx-fbar-label { display: inline-flex; align-items: center; gap: 4px; margin-right: 4px; font-size: var(--sx-fs-11); color: var(--sx-ink-500); }
+.sx-fbar .sx-fchip.sx-fchip { display: inline-flex; align-items: center; gap: 4px; width: auto; height: auto; min-height: 0; margin: 0; padding: 4px 8px; border: 1px solid var(--sx-border); border-radius: var(--sx-radius-md); background-color: var(--sx-surface); color: var(--sx-ink-600); font-size: var(--sx-fs-11); font-weight: 500; line-height: 1.4; box-shadow: none; cursor: pointer; transition: background-color 0.15s ease, border-color 0.15s ease; }
+.sx-fbar .sx-fchip.sx-fchip:hover { background-color: var(--sx-surface-muted); }
+.sx-fbar .sx-fchip.sx-fchip.sx-fchip-active { border-color: var(--sx-maroon-200); background-color: var(--sx-maroon-50); color: var(--sx-maroon-700); }
+.sx-fbar select.sx-fchip.sx-fchip { -webkit-appearance: none; appearance: none; padding-right: 22px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 11px) 55%, calc(100% - 7px) 55%; background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; }
+.sx-fbar .sx-fbar-clear { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 4px 8px; border-radius: var(--sx-radius-md); font-size: var(--sx-fs-11); font-weight: 500; color: var(--sx-ink-600); text-decoration: none; cursor: pointer; }
+.sx-fbar .sx-fbar-clear:hover { background-color: var(--sx-surface-muted); color: var(--sx-ink-900); }
+.sx-th-sort { cursor: pointer; user-select: none; }
+.sx-th-sort:hover { color: var(--sx-ink-900); }
+.sx-th-sort-active { color: var(--sx-maroon-700); }
+
+/* L3b: right end of the chip row (Clear all + Recently deleted) */
+.sx-fbar .sx-fbar-end { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
+.sx-fbar .sx-fbar-end .sx-fbar-clear { margin-left: 0; }
+.sx-fbar .sx-fbar-link { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: var(--sx-radius-md); font-size: var(--sx-fs-11); font-weight: 500; color: var(--sx-ink-500); text-decoration: none; cursor: pointer; }
+.sx-fbar .sx-fbar-link:hover { background-color: var(--sx-surface-muted); color: var(--sx-ink-900); }
+.sx-fbar .sx-fbar-link.sx-fbar-link-active { color: var(--sx-maroon-700); }
+/* L3b: deleted-view banner (warning tint) */
+.sx-deleted-banner { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 12px; border: 1px solid var(--sx-warning-200); border-radius: var(--sx-radius-md); background-color: var(--sx-warning-50); color: var(--sx-warning-800); font-size: var(--sx-fs-12); }
+.sx-deleted-banner .sx-deleted-back { color: var(--sx-maroon-700); font-weight: 500; text-decoration: none; cursor: pointer; }
+.sx-deleted-banner .sx-deleted-back:hover { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .sx-dtoolbar { flex-wrap: wrap; }
+  .sx-fbar .sx-fbar-clear { margin-left: 0; }
+  .sx-fbar .sx-fbar-end { margin-left: 0; }
+}
