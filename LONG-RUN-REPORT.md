@@ -1072,3 +1072,38 @@ Source: notes/overnight-N-source-specs.md §N4 (app/dashboard/tasks/actions.ts, 
 | Task_Validate, Task_SpawnNext | NEW private server actions |
 Read-back: full node text of all actions, every If branch target checked; validation 0 errors (known warnings).
 Tests (CGB India only): Task_Create("Call CFO", PriorityCode "high", DueDate today−1, AssignedUserId = other member) → ok + notification "New task: Call CFO"; Task_List(Overdue True) lists it with IsOverdue True; Task_Create(RecurrenceCode "weekly", DueDate D) → Task_SetCompleted(id, True) → SpawnedTaskId > 0, new task due D+7, status todo; again → "unchanged"; Task_SetCompleted(id, False) → status todo, CompletedAt empty; Task_Delete twice → ok both; Title "" → validation "Title is required"; as viewer → permission denied manageDeals.
+
+## N5 notes, comments, timeline — PUBLISHED Sales rev 25 (env_app verified 2026-11-12 23:04 UTC)
+Source: notes/overnight-N-source-specs.md §N5 (app/dashboard/notes/actions.ts, comments/actions.ts, lib/comments/mentions.ts, lib/timeline/queries.ts).
+### Parity checklist
+| # | Item | Source | Rebuild | Status |
+|---|---|---|---|---|
+| 1 | Entity types | deal / company / contact | same; Sales_EntityVisible (exists, not deleted, not merged, persona scope) gates list / create | same + scope (addendum) |
+| 2 | Note create permission | by type: manageDeals / manageCompanies / manageContacts | same (Switch) | same |
+| 3 | Note body | trimmed, 1–8000, "Note can’t be empty" | same; > 8000 "Note must be 8000 characters or fewer" (source = zod max) | same |
+| 4 | Note create activity | parent: updated {noteId, notePreview 120, fields ["notes"]} | same; + Company_RefreshRollups for company notes (LastActivityAt counts company notes) | same |
+| 5 | Note update / delete | manageDeals; author only ("You can only edit / delete your own notes."); "Note not found."; delete idempotent + soft; no activity | same (OutcomeCode forbidden / not_found) | same |
+| 6 | Note list | not deleted, created desc, 100 | same + AuthorName, CanEdit | same |
+| 7 | Comment create | per-type permission; body 1–8000 "Comment can’t be empty"; one reply level (parent of a reply → its parent; missing parent → top level); mentions @[Name](id) → mentioned_user_ids; notify mentioned ≠ actor "Mentioned you in a comment", subtitle preview (@Name, whitespace collapsed, 80 + …); activity parent updated {commentId, commentPreview 80, kind comment} | same (private Comment_ParseMentions, max 50 tokens, ids ≤ 128) | same; LOW: an invalid token (empty id) stops parsing, the rest of the body is kept as text (source regex skips it) |
+| 8 | Comment edit | author only, re-parse mentions, edited_at, no new notifications | NOT built (queue asked List / Create / Delete) | backlog |
+| 9 | Comment delete | manageDeals, author only, idempotent, soft, no activity | same | same |
+| 10 | Comment list | not deleted, created asc, 200 | same | same |
+| 11 | Timeline | activity + notes + comments + emails, created desc, limit 150; activity rows with noteId / commentId / emailId skipped; company = company + up to 500 child deals + 500 child contacts; items carry source {type, id, name} | Activity_ListFor(EntityType, EntityId, MaxItems 1–300 default 150): activity + notes + comments, ListSort desc, trimmed; company child sets via ",id," text + Index; SourceName for child notes / comments | same except: no emails (Comms not built); activity SourceName empty (ActivityLog.EntityId is Text, cannot join) |
+| 12 | Timeline UI filters (All / Mine / Teammates / Emails / …) | client side | UI filters on Kind / ActorUserId / Action | UI |
+### Elements (rev 25)
+| Element | Kind |
+|---|---|
+| NoteItem (Id, EntityType, EntityId, Body, AuthorUserId, AuthorName, CanEdit, CreatedAt, UpdatedAt) | NEW public structure |
+| CommentItem (Id, EntityType, EntityId, ParentCommentId, Body, AuthorUserId, AuthorName, MentionedUserIds, CanEdit, EditedAt, CreatedAt) | NEW public structure |
+| TimelineItem (Kind, Id, CreatedAt, ActorUserId, ActorName, Action, Body, Metadata, EntityType, EntityId, SourceName) | NEW public structure |
+| Note_List(EntityType, EntityId) → Items | NEW public service action |
+| Note_Create(EntityType, EntityId, Body) → Success, OutcomeCode (ok / validation / not_found), Message, NoteId | NEW |
+| Note_Update(NoteId, Body) → Success, OutcomeCode (ok / validation / not_found / forbidden), Message | NEW |
+| Note_Delete(NoteId) → Success, OutcomeCode (ok / forbidden), Message | NEW |
+| Comment_List(EntityType, EntityId) → Items | NEW |
+| Comment_Create(EntityType, EntityId, Body, ParentCommentId) → Success, OutcomeCode, Message, CommentId | NEW |
+| Comment_Delete(CommentId) → Success, OutcomeCode, Message | NEW |
+| Activity_ListFor(EntityType, EntityId, MaxItems) → Items (TimelineItem List) | NEW |
+| Sales_EntityVisible, Comment_ParseMentions | NEW private server actions |
+Read-back: full node text, every Switch / If / loop target checked; validation 0 errors (known warnings).
+Tests (CGB India only): Note_Create("deal", id, "First call done") → ok; Note_List shows it with CanEdit True; as another member Note_Update → forbidden; Comment_Create("deal", id, "Ping @[Asha](<her user id>)") → Asha gets "Mentioned you in a comment" / subtitle "Ping @Asha"; reply to a reply → stored under the top comment; Activity_ListFor("company", id) → company rows + child deal / contact rows with SourceName on notes / comments, newest first, ≤ 150.
