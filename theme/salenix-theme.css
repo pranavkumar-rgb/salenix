@@ -1358,11 +1358,15 @@ a.sx-rail-item.sx-active .icon {
   color: #ffffff;
 }
 /* lib/brand/logo.tsx SaleinxIcon 22px left of the wordmark (Image SalenixLogo in UIKit AppLayout RailBrand) */
-.sx-rail-logo {
+.sx-rail-logo,
+.sx-rail-brand img.sx-rail-logo {
   display: block;
-  flex-shrink: 0;
+  flex: 0 0 22px;
   width: 22px;
   height: 22px;
+  max-width: 22px;
+  max-height: 22px;
+  object-fit: contain;
 }
 
 /* --- v2.2 Page header title group (UIKit PageHeader TitleGroup) --------- */
@@ -1415,11 +1419,15 @@ a.sx-rail-item.sx-active .icon {
   color: var(--sx-ink-900);
 }
 /* SaleinxIcon 36px left of the wordmark (Image SalenixLogo on Login) */
-.sx-auth-logo {
+.sx-auth-logo,
+.sx-auth-brand img.sx-auth-logo {
   display: block;
-  flex-shrink: 0;
+  flex: 0 0 36px;
   width: 36px;
   height: 36px;
+  max-width: 36px;
+  max-height: 36px;
+  object-fit: contain;
 }
 .sx-auth-subtitle {
   margin-top: 16px;
@@ -1463,6 +1471,7 @@ a.sx-rail-item.sx-active .icon {
 .sx-fbar .sx-fchip.sx-fchip:hover { background-color: var(--sx-surface-muted); }
 .sx-fbar .sx-fchip.sx-fchip.sx-fchip-active { border-color: var(--sx-maroon-200); background-color: var(--sx-maroon-50); color: var(--sx-maroon-700); }
 .sx-fbar select.sx-fchip.sx-fchip { -webkit-appearance: none; appearance: none; padding-right: 22px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 11px) 55%, calc(100% - 7px) 55%; background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; }
+.sx-fbar .dropdown-container::after { display: none; }
 .sx-fbar .sx-fbar-clear { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 4px 8px; border-radius: var(--sx-radius-md); font-size: var(--sx-fs-11); font-weight: 500; color: var(--sx-ink-600); text-decoration: none; cursor: pointer; }
 .sx-fbar .sx-fbar-clear:hover { background-color: var(--sx-surface-muted); color: var(--sx-ink-900); }
 .sx-fbar .sx-fbar-end { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }

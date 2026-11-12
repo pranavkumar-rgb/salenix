@@ -6,6 +6,9 @@ Source of the design: `source/src/app/globals.css`, `source/src/lib/brand/tokens
 
 v2.2 (Salenix_Theme rev 6, 2026-11-12, batch TC1 part 1): every rule that lived in the Salenix app stylesheets (MainLayout, Login, Deals, Companies, Contacts, SxDrawer, DealFormBlock, CompanyFormBlock, ContactFormBlock) was appended as the "v2.2" section at the end of the theme (same selectors, duplicates merged), so the cascade order is unchanged. From v2.2 on the Salenix app holds no CSS of its own. New classes are marked (v2.2) below.
 
+## Icons (v2.2, TC1-fix)
+Salenix_Theme sets the theme property IconLibrary = Phosphor 2.0 (overrides the OutSystemsUI default FontAwesome 4). Every Icon widget uses Phosphor 2.0 names; Font Awesome names (search, home, times, building, columns, check-circle, filter) do not render and raise "not available in the Phosphor 2.0 icon library". Mapping used (source lucide → Phosphor): Search → magnifying-glass, Plus → plus, Filter → funnel, X → x, LayoutDashboard → squares-four, GitBranch → git-branch, Briefcase → briefcase, BadgeCheck → seal-check, UsersRound → users, Building2 → buildings, Bell → bell. After renaming, an icon with the same name may still warn until it is re-selected from the library.
+
 ## Fonts
 Loaded by `@import` from Google Fonts at the top of the theme: Inter (body, 400-700), Fraunces (page titles, opsz + wght), Geist Mono (numbers: KPI values, money columns). If the ODC stage gets a Content Security Policy, allow `fonts.googleapis.com` (style) and `fonts.gstatic.com` (font).
 
@@ -144,7 +147,7 @@ Replace the default `btn` / `btn-primary` Style Classes with these; do not combi
 | `sx-rail` | Left navigation container (maroon gradient, 200px) | sidebar.tsx DesktopSidebar |
 | add `sx-rail-collapsed` | Collapsed rail (56px) | sidebar.tsx `w-14` |
 | `sx-rail-brand` | Logo row at the top of the rail (v2.2: wordmark 20px semibold white) | sidebar.tsx Brand |
-| `sx-rail-logo` | Image SalenixLogo (22px) left of the wordmark in UIKit AppLayout RailBrand (v2.2) | lib/brand/logo.tsx |
+| `sx-rail-logo` | Image RailLogo (resource SalenixLogo, 128px PNG) left of the wordmark in UIKit AppLayout RailBrand; widget Width 22px + this class (flex 0 0 22px, max 22px, object-fit contain; theme rev 7) | lib/brand/logo.tsx SaleinxIcon size 22 |
 | `sx-rail-nav` | Scrollable list of nav groups | sidebar.tsx NavList |
 | `sx-rail-section` | Group label (10px uppercase, white 50%) | sidebar.tsx group h3 |
 | `sx-rail-item` | One nav link; add `sx-active` for the current screen (marigold pill) | sidebar.tsx link |
@@ -168,7 +171,7 @@ v2.2 rail rules (no new class): `a.sx-rail-item` (white 80% text, white hover, m
 | `sx-auth-inner` | 26rem column | auth-shell.tsx |
 | `sx-auth-header` | Logo + wordmark + subtitle, centered | auth-shell.tsx header |
 | `sx-auth-brand` | Wordmark row (28px semibold) | auth-shell.tsx |
-| `sx-auth-logo` | Image SalenixLogo 36px left of the wordmark | lib/brand/logo.tsx |
+| `sx-auth-logo` | Image AuthLogo (resource SalenixLogo) 36px left of the wordmark; widget Width 36px + this class (flex 0 0 36px, max 36px, object-fit contain; theme rev 7) | lib/brand/logo.tsx |
 | `sx-auth-subtitle` | Line under the wordmark | auth-shell.tsx |
 | `sx-auth-card` | White card around the form (radius 12, padding 24) | sign-in-form.tsx |
 | `sx-auth-password` | Wrapper of the password input (room for the eye toggle) | sign-in-form.tsx |
@@ -187,7 +190,7 @@ v2.2 rail rules (no new class): `a.sx-rail-item` (white 80% text, white hover, m
 | `sx-dsearch` / `sx-dsearch-icon` / `sx-dsearch-input` | Search box wrapper / icon / input (with `sx-input`) | deals-view.tsx search |
 | `sx-fbar` | Filter chip row | deal-filter-bar.tsx / toggle-filter-bar.tsx |
 | `sx-fbar-label` | "Filters" label at the start of the row | same |
-| `sx-fchip` (+ `sx-fchip-active`) | Chip button or dropdown chip (a select gets a caret) | same |
+| `sx-fchip` (+ `sx-fchip-active`) | Chip button or dropdown chip. A native Dropdown chip gets ONE caret (CSS gradient, currentColor → maroon when active); the OutSystems UI arrow `.dropdown-container::after` is hidden inside `.sx-fbar` (theme rev 7) | deal-filter-bar.tsx PopoverChip ChevronDown |
 | `sx-fbar-clear` | "Clear all" link (right) | same |
 | `sx-fbar-end` | Right-aligned group (Clear all + Recently deleted) | toggle-filter-bar.tsx |
 | `sx-fbar-link` (+ `sx-fbar-link-active`) | Text link in the chip row ("Recently deleted") | companies / contacts view |

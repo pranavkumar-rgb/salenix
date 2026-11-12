@@ -925,3 +925,39 @@ The old laptop died. GitHub main ends at 2248206 (L4); the unpushed commits 1f03
 - Login: Image AuthLogo → UIKit image SalenixLogo, class sx-auth-logo, alt "", parent sx-auth-brand (inside sx-auth-header), followed by the text "Salenix". There is no widget named SalenixLogo — SalenixLogo is the UIKit image resource; the rail widget is RailLogo.
 - Salenix validation: 0 errors, 30 warnings = 1 Login UI_StartSession (known), 2 unused client actions UI_ApprovalOptions / UI_DealSortOptions (known), 27 icons not in the Phosphor 2.0 icon library (NEW).
 - Unfinished Mentor runs: cannot be listed (session ids lived on the old laptop); a closed session discards its draft, and the live revisions show no half-published state.
+
+# TC1-fix 2026-11-13 — logo size, Phosphor icons, chip arrow (Mentor sessions 160d285c change + publish, cb9a744d read-back)
+Browser check after TC1 (Salenix rev 34 /Deals): rail logo ~120px pushing the wordmark ("Salen"), empty search icon gap, two arrows on the Stage / Owner chips, Dashboard rail item without icon.
+
+## Read-only findings
+| # | Symptom | Cause |
+|---|---|---|
+| 1 | Rail logo ~120px | Salenix rev 34 references UIKit rev 6 (fixed): RailLogo Style Classes "sx-Rail-logo" (capital R) → `.sx-rail-logo` never matched; Width empty; SalenixLogo = 128×128 PNG. UIKit rev 7 already had the right case but was not referenced |
+| 2, 4, 5 | No search / rail / button icons | Salenix_Theme theme property IconLibrary = Phosphor 2.0 (base OutSystemsUI = FontAwesome4.0); all 27 Icon widgets used Font Awesome names. The rail Dashboard item had icon "home" (invalid), not "no icon" |
+| 3 | Two arrows on dropdown chips | Native Dropdown renders `.dropdown-container > select.dropdown-display`; OutSystemsUI 3.0.0 draws the arrow with `.dropdown-container:after` (content var(--osui-icon-arrow-down)); our `.sx-fbar select.sx-fchip.sx-fchip` draws a second caret |
+OutSystemsUI reference: 3.0.0 (Salenix producer rev 174). Whether IconLibrary was already Phosphor before Theme rev 6 cannot be read (Mentor cannot open earlier revisions).
+
+## Parity checklist
+| # | Item | Source | Result | Status |
+|---|---|---|---|---|
+| 1 | Rail logo | SaleinxIcon size 22, shrink-0, gap 8px, wordmark 20px | RailLogo Width 22px + sx-rail-logo (flex 0 0 22px, max 22px, object-fit contain) | same after the Studio reference refresh |
+| 2 | Login logo | 36px | AuthLogo Width 36px + sx-auth-logo 36px | same after refresh (class already matched) |
+| 3 | Search icon | lucide Search, slate-400, left 12px | magnifying-glass, sx-dsearch-icon unchanged | same (live in rev 35) |
+| 4 | Chip dropdown arrow | one ChevronDown, slate-400 / indigo-600 active | CSS caret (currentColor) kept, OSUI arrow hidden in .sx-fbar | same after refresh |
+| 5 | Rail icons | LayoutDashboard, GitBranch, Briefcase, BadgeCheck, UsersRound, Building2 | squares-four, git-branch, briefcase, seal-check, users, buildings | same (closest Phosphor) |
+| 6 | New … buttons / filter label / Clear all / drawer close / bell | Plus, Filter, X, X, Bell | plus, funnel, x, x, bell | same |
+| 7 | EmptyState icons | lucide per screen | UIKit renders "fa fa-<name>" classes; not changed | Parity backlog (open list) |
+
+## Changes (all published, env_app / app_list verified)
+| App | Rev | Change |
+|---|---|---|
+| Salenix_Theme | 7 | `.sx-rail-logo, .sx-rail-brand img.sx-rail-logo` and `.sx-auth-logo, .sx-auth-brand img.sx-auth-logo` = display block, flex 0 0 22/36px, width/height + max 22/36px, object-fit contain; new `.sx-fbar .dropdown-container::after { display: none; }` after the select caret rule. 1,542 → 1,551 lines, 51,247 → 51,492 chars; 0 errors, 1 known warning (Google Fonts @import) |
+| Salenix_UIKit | 8 | AppLayout RailLogo Width 22px (no Height property on the Image widget). 0 / 0 |
+| Salenix | 35 | Icon names: search → magnifying-glass (Deals, Companies, Contacts SearchIcon); filter → funnel (3 FilterLabel); times → x (3 ClearAllLink, MainLayout CloseDrawer, StageChangeDrawer); home → squares-four (rail Dashboard ×2); columns → git-branch (rail Pipeline ×2); check-circle → seal-check (rail Approvals); building → buildings (rail Companies ×2); re-selected same name: plus (4 New buttons), briefcase (×2), users (×2), bell. Login AuthLogo Width 36px. 0 errors, 3 known warnings; stylesheets empty; references unchanged (Theme 6, UIKit 6) |
+Read-back (fresh session cb9a744d, Salenix 35 / UIKit 8 / Theme 7): 29 Icon widgets, none warns; RailLogo 22px "sx-rail-logo"; AuthLogo 36px "sx-auth-logo"; theme rules as above.
+
+## Studio step (user, by hand) — PENDING
+1. Salenix_Theme: open rev 7 in ODC Studio → release it (as done for rev 6).
+2. Salenix_UIKit: open rev 8 → release it.
+3. Salenix: open a fresh copy of rev 35 → Manage Dependencies → refresh Salenix_Theme (→ 7) and Salenix_UIKit (→ 8), nothing else → publish from Studio (expected Salenix rev 36).
+4. Then: app_list / env_app check + browser test (rail logo 22px with full "Salenix", Login logo 36px, search icons, one arrow on Stage / Owner / Company chips, rail icons, EmptyState icons).
