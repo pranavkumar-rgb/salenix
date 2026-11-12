@@ -979,3 +979,30 @@ Read-back (fresh session cb9a744d, Salenix 35 / UIKit 8 / Theme 7): 29 Icon widg
 | Import | Sales 20–21, DevTools 19–20 | DevOnly_ImportBatch + T11. Fixes: T11 Text Area Max Length 500 → none (DevTools 20); swapped companies / deals Switch targets (Sales 21). |
 | T11 run (Vizion, owner = importer) | — | TESTED: 72 batches; companies 250 created, contacts 437, notes 437, deals 249 (lead, 0 INR), deal-contact links 437, failed 0. Re-run check TESTED (1 Companies): created 0, existing 250, failed 0. |
 Source file: data/salenix-import-contacts.json (git-ignored; counts only here).
+
+# Overnight run N — Salenix_Sales server part of P2 (2026-11-13 night)
+Standing approval (user): batches N1–N9, Salenix_Sales only, ADD-only (new actions / structures / attributes / optional inputs), no data writes (Vizion = real data), publish + env_app verify + commit per batch. Source specs for N3–N9: notes/overnight-N-source-specs.md (file:line refs). Mentor session fefd9199 (read-only pattern check first: Company_SoftDelete node text, exceptions SalesError / ValidationError, every existing deal aggregate already filters DeletedAt = NullDate()).
+
+## N1 L22 Deal soft delete + N2 L23 context field — PUBLISHED Sales rev 22 (env_app verified 2026-11-12 22:19 UTC)
+### Parity checklist
+| # | Item | Source | Rebuild | Status |
+|---|---|---|---|---|
+| 1 | Delete permission | deleteDeals (owner, admin) ACT:2019 | Sales_RequirePermission deleteDeals | same |
+| 2 | Delete guard + text | active row in tenant, "Deal not found or already deleted." | same + persona scope (owner/admin are never sales → no effect) | same |
+| 3 | Delete write | deleted_at, deleted_by; activity deleted {name} | + UpdatedAt; activity deleted {name}; Company_RefreshRollups | same (+ rollups; source VIEW recomputes itself) |
+| 4 | Restore | restoreDeals; any row in tenant; "Deal not found in this tenant."; activity restored | only deleted rows (stricter, as Company_Restore) | different on purpose (consistency) |
+| 5 | Deleted list | listDeletedDeals: deleted only, deleted_at desc | Deal_List IncludeDeleted → deleted only, all stages, most recently deleted first; roles without deleteDeals get an empty list | same |
+| 6 | Realtime deal.deleted / restored, embeddings | yes | not built (no realtime / AI yet) | not possible yet |
+| 7 | Hard delete (hardDeleteDeals, owner) | yes | not in the queue | backlog |
+| 8 | Context field | updateDealFieldAction: field nextStep / competitor / source, manageDeals, value trimmed, empty → null, max 2000, "Invalid field update.", "Deal not found in this tenant.", activity updated {name, field} | Deal_UpdateContextField(DealId, Field next_step / source / competitor, Value): same; limits = column lengths 500 / 100 / 250 (source 2000 exceeds our columns); persona scope added; output SavedValue | same (limits = our columns) |
+| 9 | Score recompute on edit | queueDealScoreRecompute | not built (no scoring job) | not possible yet |
+### Elements (rev 22)
+| Element | Change |
+|---|---|
+| Deal_SoftDelete(DealId) → Success, OutcomeCode (ok / not_found), Message | NEW public service action |
+| Deal_Restore(DealId) → same | NEW public service action |
+| Deal_UpdateContextField(DealId, Field, Value) → Success, OutcomeCode (ok / invalid_field / validation / not_found), Message, SavedValue | NEW public service action (Switch next_step → NextStep, source → Source, competitor → Competitor; Otherwise unreachable → same next node) |
+| DealListItem.DeletedAt (Date Time) | NEW attribute |
+| Deal_List IncludeDeleted (optional, default False) | NEW input: Foundation_HasPermission(deleteDeals) gate → empty list; filter If(IncludeDeleted, DeletedAt <> NullDate, = NullDate); closed-stage filter skipped; NumKey = deleted time first |
+Read-back: node text of all three actions, both If branches and every Switch target checked; validation 0 errors (warnings = known: unused FailedRules outputs, font URLs). A deleted deal cannot be opened (Deal_Get etc. keep their DeletedAt filter) — same as source.
+Tests (CGB India only): as admin Deal_SoftDelete → ok; again → not_found; Deal_List(IncludeDeleted True) lists it; Deal_Restore → ok; member → "Permission denied: requires "deleteDeals" …". Deal_UpdateContextField(id, "next_step", " Call CFO ") → SavedValue "Call CFO"; Field "stage" → invalid_field.
