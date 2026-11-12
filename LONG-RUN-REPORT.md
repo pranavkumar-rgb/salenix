@@ -1006,3 +1006,34 @@ Standing approval (user): batches N1–N9, Salenix_Sales only, ADD-only (new act
 | Deal_List IncludeDeleted (optional, default False) | NEW input: Foundation_HasPermission(deleteDeals) gate → empty list; filter If(IncludeDeleted, DeletedAt <> NullDate, = NullDate); closed-stage filter skipped; NumKey = deleted time first |
 Read-back: node text of all three actions, both If branches and every Switch target checked; validation 0 errors (warnings = known: unused FailedRules outputs, font URLs). A deleted deal cannot be opened (Deal_Get etc. keep their DeletedAt filter) — same as source.
 Tests (CGB India only): as admin Deal_SoftDelete → ok; again → not_found; Deal_List(IncludeDeleted True) lists it; Deal_Restore → ok; member → "Permission denied: requires "deleteDeals" …". Deal_UpdateContextField(id, "next_step", " Call CFO ") → SavedValue "Call CFO"; Field "stage" → invalid_field.
+
+## N3 list filters (L11, L12, L14, L15, L16) — PUBLISHED Sales rev 23 (env_app verified 2026-11-12 22:33 UTC)
+Source: notes/overnight-N-source-specs.md §N3 (lib/deals/filters.ts + queries.ts listDeals, lib/companies, lib/contacts). Mentor prompt in 3 + 1 parts (one long prompt was refused by the MCP gateway with a CloudFront 403 "Request blocked" → split into smaller prompts written partly in words; no change was lost).
+### Parity checklist
+| # | Filter | Source | Rebuild | Status |
+|---|---|---|---|---|
+| 1 | Unassigned | owner_id IS NULL | Deal_List Unassigned | same |
+| 2 | Stale | open (not won/lost, hold counts) and updated_at < now − staleDays (default 14) | StaleOnly + StaleDays (≤ 0 → 14), StaleBefore local | same |
+| 3 | PO missing | won and NOT (all proofs in deal currency and |Σ subtotal − amount| ≤ 100) | PoMissing: GetPoSums (DealOrderProof ⋈ Deal, won, group DealId + AmountMinor, Σ SubtotalMinor, Σ CurrencyMismatch) → ValidPoDealIds ",id,…," → filter Index = -1; won/lost shown even without IncludeClosed | same |
+| 4 | Revisit due | hold and hold_revisit_on <= CURRENT_DATE (UTC) | RevisitDue: hold, date set, ≤ Foundation_TodayFor | same (workspace date, decision 7) |
+| 5 | Slipped only | push_count >= 1 | SlippedOnly | same |
+| 6 | Score band | health_band = strong / moderate / at_risk | ScoreBand (any text, trim/lower) | same |
+| 7 | Amount min / max | inclusive, minor units, >= 0 | AmountMinorMin / Max inclusive; **0 or less = no filter** (so "max 0" cannot be asked) | different on purpose (optional input default 0) |
+| 8 | Close from / to | inclusive, NULL dates never match | CloseFrom / CloseTo inclusive, NullDate = no filter | same |
+| 9 | Company | companyIds = company NAMES (deal company_name or linked company) | CompanyId (one linked company id) | different on purpose (ids; our deals always link Company) |
+| 10 | Stages multi | stage IN list | StageCodes comma text (lower, spaces removed); also shows won/lost | same |
+| 11 | Owners multi | owner_id IN list | OwnerUserIds comma text (IdentifierToText(OwnerId)) | same |
+| 12 | Sort direction | source: recent / risk only, no direction | SortDir "" (today's direction per code) / asc / desc via SortFlip, NumKeyDir, TextKeyDesc; deleted view ignores it | our addition (L14) |
+| 13 | Risk sort, missing-field, offering filters | yes | not built (no DealRiskScore data, completeness, offerings) | backlog |
+| 14 | Companies Has active deals | open_deal_count > 0 | HasActiveDeals → OpenDealCount > 0 | same |
+| 15 | Companies recently active N days | COALESCE(last_activity_at, epoch) >= now − N | RecentActivityDays → LastActivityAt set and >= RecentSince | same |
+| 16 | Companies created within N days | created_at >= now − N | CreatedWithinDays | same |
+| 17 | Companies stale | last_activity_at NULL or < now − staleDays (30) | Stale + StaleDays (≤ 0 → 30) | same |
+| 18 | Contacts recently active | EXISTS activity_logs (contact, created_at >= now − N) | RecentActivityDays → GetRecentContactActivity (ActivityLog contact, group EntityId) → RecentContactIds ",id," → Index filter | same |
+| 19 | Contacts created within N days | created_at >= now − N | CreatedWithinDays | same |
+### Elements (rev 23)
+- Deal_List: NEW optional inputs Unassigned, StaleOnly, StaleDays, PoMissing, RevisitDue, SlippedOnly, ScoreBand, AmountMinorMin, AmountMinorMax, CloseFrom, CloseTo, CompanyId, StageCodes, OwnerUserIds, SortDir; locals TodayLocal (Foundation_TodayFor), StaleBefore, StageList, OwnerList, ValidPoDealIds, SortFlip; If PoMissing (False → GetDeals; True → GetPoSums → For Each → final comma → GetDeals); GetDeals filters 9–21 new, filter 8 extended (StageCodes / PoMissing also show closed stages); calculated NumKeyDir, TextKeyDesc; sort NumKeyDir ↑, TextKeyDesc ↓, TextKey ↑, TieKey ↑ (SortDir empty → identical order).
+- Company_List: NEW optional inputs HasActiveDeals, RecentActivityDays, CreatedWithinDays, Stale, StaleDays; locals RecentSince, CreatedSince, StaleBefore; GetCompanies filters 7–10.
+- Contact_List: NEW optional inputs RecentActivityDays, CreatedWithinDays; locals RecentSince, CreatedSince, RecentContactIds; If RecentActivityDays > 0 (True → GetRecentContactActivity → For Each → final comma → GetContacts; False → GetContacts); GetContacts filters 9–10.
+Read-back: every filter text, both If branches and the loop targets checked; validation 0 errors (known warnings only).
+Tests (read-only, any workspace): Deal_List(PoMissing True) → only Won deals without a matching PO; StageCodes "lead,qualified" → both stages; OwnerUserIds = one id → same as OwnerUserId; SortBy "value" SortDir "asc" → smallest first; StaleOnly → open deals not updated for 14 days; Company_List(Stale True) → companies without activity in 30 days (imported companies with no activity included); Contact_List(RecentActivityDays 14).
