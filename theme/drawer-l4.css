@@ -1,0 +1,17 @@
+/* L4 (Salenix rev 29-30) - copy of the Salenix-only CSS added in batch L4.
+   EMERGENCY CSS: move to Salenix_Theme with the other items in the open list. */
+
+/* (a) MainLayout block stylesheet, appended at the end.
+   UIKit PageHeader renders title and subtitle as sibling spans; put the subtitle on its own line (source h1 + p). */
+.sx-page-header .sx-page-title { display: block; }
+.sx-page-header .sx-page-subtitle { display: block; }
+
+/* (b) SxDrawer block stylesheet (source drawer.tsx). The sx-drawer* classes come from Salenix_Theme. */
+.sx-drawer .sx-drawer-backdrop { cursor: pointer; }
+.sx-drawer .sx-drawer-header .sx-btn { flex: 0 0 auto; }
+.sx-drawer .sx-drawer-body .sx-form-footer { position: sticky; bottom: -16px; z-index: 1; margin: 16px -20px -16px; padding: 12px 20px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--sx-border); background-color: var(--sx-surface); }
+.sx-form-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--sx-border); }
+@media (max-width: 640px) { .sx-drawer .sx-drawer-panel { max-width: 100%; } }
+
+/* (c) CompanyFormBlock, ContactFormBlock, DealFormBlock stylesheets (same rule in each). */
+.sx-form-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--sx-border); }
