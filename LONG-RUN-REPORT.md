@@ -1107,3 +1107,27 @@ Source: notes/overnight-N-source-specs.md §N5 (app/dashboard/notes/actions.ts, 
 | Sales_EntityVisible, Comment_ParseMentions | NEW private server actions |
 Read-back: full node text, every Switch / If / loop target checked; validation 0 errors (known warnings).
 Tests (CGB India only): Note_Create("deal", id, "First call done") → ok; Note_List shows it with CanEdit True; as another member Note_Update → forbidden; Comment_Create("deal", id, "Ping @[Asha](<her user id>)") → Asha gets "Mentioned you in a comment" / subtitle "Ping @Asha"; reply to a reply → stored under the top comment; Activity_ListFor("company", id) → company rows + child deal / contact rows with SourceName on notes / comments, newest first, ≤ 150.
+
+## N6 admin home KPIs — PUBLISHED Sales rev 26 (env_app verified 2026-11-12 23:15 UTC)
+Source: notes/overnight-N-source-specs.md §N6 (lib/dashboard/kpis.ts, range.ts, queries.ts, trend-shaping.ts, kpi-strip.tsx, admin-home.tsx). Dashboard_GetSummary NOT changed.
+### Parity checklist
+| # | KPI | Source | Rebuild (Dashboard_GetKpis) | Status |
+|---|---|---|---|---|
+| 1 | Range | last_7d / last_30d / last_90d (default) / this_quarter / this_year / custom (≤ 730 days); UTC | same codes; dates from Foundation_TodayFor; window [From 00:00, To+1 00:00) UTC; RangeFrom / RangeTo / RangeLabel outputs | same (workspace "today") |
+| 2 | Rep view | view=rep:<id> → owner filter (admin / manager) | OwnerUserId input; persona sales → always self | same (+ scope) |
+| 3 | Total pipeline | live snapshot, stage not won / lost (hold included) | same (current stage; no history replay) | same for "now" |
+| 4 | Prior pipeline + deltas | snapshot at range.from via deal_stage_history; deltas vs prior window | NOT built | backlog (needs stage-history replay) |
+| 5 | Weighted pipeline | Σ stage total × stage probability / 100 (table lead 10 … hold 40; org overrides) | Stage_DefaultProbability table | same, without per-workspace overrides (no setting yet) |
+| 6 | Win rate | won / (won + lost), closed_at in window | WinRatePct (1 decimal), WonCount, LostCount | same |
+| 7 | Avg deal size | won sum / won count in window | AvgDealSizeMinor, WonValueMinor | same |
+| 8 | Avg sales cycle | avg(closed_at − created_at) days, won, closed > created, 1 decimal | AvgCycleDays | same |
+| 9 | Quota attainment + coverage | FY targets, quota_weight credit, pending, coverage ratio | NOT built (SalesTarget lives in Salenix_Finance) | not possible yet |
+| 10 | Record counts | companies / contacts non-deleted (merged not excluded), active deals; tenant-wide | CompanyCount, ContactCount, ActiveDealCount | same |
+| 11 | Revenue trend | daily won / lost by closed_at, new pipeline by created_at, shaped into ISO weeks (Monday) | RevenueTrend: TrendWeekItem per Monday week from RangeFrom to RangeTo (WonRevenueMinor, WonCount, LostCount, NewPipelineMinor, NewDealCount) | same (95th-percentile axis cap = UI) |
+| 12 | Stage bars + donut | count + sum per stage, all 7, all time, owner filter | StageTotals (existing StageTotalItem) fixed order lead … lost, zeros included | same |
+| 13 | Deal highlights (top wins, progress, new, at risk, closing soon) | 5 each | NOT built | backlog |
+### Elements (rev 26)
+- NEW public structure TrendWeekItem (WeekStart, WonRevenueMinor, WonCount, LostCount, NewPipelineMinor, NewDealCount).
+- NEW public service action Dashboard_GetKpis(RangeCode, FromDate, ToDate, OwnerUserId) → RangeFrom, RangeTo, RangeLabel, TotalPipelineMinor, WeightedPipelineMinor, WonCount, LostCount, WonValueMinor, WinRatePct, AvgDealSizeMinor, AvgCycleDays, CompanyCount, ContactCount, ActiveDealCount, StageTotals (StageTotalItem List), RevenueTrend (TrendWeekItem List). Aggregates GetOpenByStage, GetClosed, GetCompanyCount, GetContactCount, GetActiveDeals, GetAllByStage, GetCreatedInRange; week index = Trunc(DiffDays(FirstWeek, Monday of date) / 7) with bounds check.
+Read-back: full node text, every If / loop target; validation 0 errors (known warnings). Read-only action → safe to call in Vizion.
+Tests: Dashboard_GetKpis() as owner → last 90 days, counts equal Companies / Contacts / Deals screens; StageTotals 7 rows; RevenueTrend ≈ 14 weeks; RangeCode "custom" FromDate > ToDate → falls back to last 90 days; as member → numbers only for own deals.
