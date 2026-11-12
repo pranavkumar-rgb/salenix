@@ -873,6 +873,8 @@ Every L item from the Step 1 parity table, with the server change it needs (none
 | L21 | Deal create/edit drawer (L5) | Owner field only for owner + manager (source create-deal-form.tsx canAssign; manager list excludes owners); every other role submits itself as owner. Today every role sees the field and the server rejects a forbidden owner | UI needs the acting role (Foundation_GetMyContext RoleCode) — check whether the Salenix UI wrappers already expose it |
 | L22 | Edit deal drawer (L5b) | Delete button left in the edit-deal footer (company / contact have it since L5b) | Sales Deal_SoftDelete (+ Deal_Restore, Deal_List IncludeDeleted) with permission and audit log; Deals "Recently deleted" view |
 | L23 | Deal detail Context card (L5b) | Inline edit of Next step / Source / Competitor on the detail page (source); today they are edited only in the edit drawer because Deal_Update overwrites every field | Sales Deal_UpdateContextField(DealId, FieldCode, Value) — partial update of one context field |
+| L24 | App shell top bar (seen in the live source app, 2026-11-13) | Global search / command palette: top-bar button "Search deals, companies, contacts…" with the shortcut hint (⌘K on Mac, Ctrl K elsewhere); palette with quick actions (New deal / company / contact, tasks) and live results grouped by deals, companies, contacts (+ workflows), 5 per group, ILIKE on deal name, company name / domain, contact first / last name / email; deal → detail, company / contact → list filtered by the name (source header.tsx, command-palette.tsx, api/search/route.ts) | Sales Search_Global(Term) service action (acting tenant + persona scope, MaxPerGroup 5) returning deals / companies / contacts; UI: palette block in MainLayout + JS Ctrl K / ⌘K listener |
+| L25 | Rail (seen in the live source app, 2026-11-13) | "Collapse" button at the bottom of the rail (ChevronsLeft + "Collapse"; collapsed rail w-14 shows only icons, ChevronsRight to expand, aria-label / title "Collapse sidebar" / "Expand sidebar"); state kept per browser in localStorage crm.sidebar.collapsed (source sidebar.tsx CollapseToggle, dashboard-shell.tsx) | none — UI only: theme already has sx-rail-collapsed + sx-rail-footer and `.sx-rail-collapsed + .sx-shell-main` margin; needs the toggle in UIKit AppLayout / MainLayout, an IsCollapsed input and a localStorage read/write (JS) |
 
 ## Batch results (all published clean, 0 errors / 1 known warning: Login public screen; env_app verified each time)
 | Batch | Rev | Elements | Deviations / logged choices |
@@ -956,8 +958,15 @@ OutSystemsUI reference: 3.0.0 (Salenix producer rev 174). Whether IconLibrary wa
 | Salenix | 35 | Icon names: search → magnifying-glass (Deals, Companies, Contacts SearchIcon); filter → funnel (3 FilterLabel); times → x (3 ClearAllLink, MainLayout CloseDrawer, StageChangeDrawer); home → squares-four (rail Dashboard ×2); columns → git-branch (rail Pipeline ×2); check-circle → seal-check (rail Approvals); building → buildings (rail Companies ×2); re-selected same name: plus (4 New buttons), briefcase (×2), users (×2), bell. Login AuthLogo Width 36px. 0 errors, 3 known warnings; stylesheets empty; references unchanged (Theme 6, UIKit 6) |
 Read-back (fresh session cb9a744d, Salenix 35 / UIKit 8 / Theme 7): 29 Icon widgets, none warns; RailLogo 22px "sx-rail-logo"; AuthLogo 36px "sx-auth-logo"; theme rules as above.
 
-## Studio step (user, by hand) — PENDING
+## Studio step (user, by hand) — DONE 2026-11-13 (Salenix rev 36)
 1. Salenix_Theme: open rev 7 in ODC Studio → release it (as done for rev 6).
 2. Salenix_UIKit: open rev 8 → release it.
 3. Salenix: open a fresh copy of rev 35 → Manage Dependencies → refresh Salenix_Theme (→ 7) and Salenix_UIKit (→ 8), nothing else → publish from Studio (expected Salenix rev 36).
 4. Then: app_list / env_app check + browser test (rail logo 22px with full "Salenix", Login logo 36px, search icons, one arrow on Stage / Owner / Company chips, rail icons, EmptyState icons).
+
+## TC1-fix close-out (2026-11-13, READ-ONLY, Mentor session baad1935)
+- app_list / env_app: Salenix rev 36 (Studio publish 2026-11-12 20:06 UTC), Salenix_Theme 7, Salenix_UIKit 8.
+- Salenix rev 36 references: Salenix_Theme 7 (pinned), Salenix_UIKit 8 (pinned), OutSystemsUI 174 / 3.0.0, OutSystemsCharts 13, OutSystemsMaps 17, Salenix_Foundation 28, Salenix_Sales 19, (System) 17. Default theme Salenix_Theme; no local theme; all screen / block stylesheets empty.
+- Browser check (user): rail logo 22px with the full wordmark, Login logo 36px, all icons visible, one arrow on the chips; EmptyState Font Awesome classes still render (empty Deals list shows the briefcase) → EmptyState item closed.
+- Validation rev 36: 0 errors, 30 warnings = 27 "icon not available in the current icon library (Phosphor2.0)" (now on the Phosphor names; icons render) + Login UI_StartSession + 2 unused client actions. Logged as a low open item in CLAUDE.md (re-select the icons in the next Mentor change of Salenix).
+- New Parity backlog rows: L24 global search (Ctrl K), L25 rail Collapse button.
