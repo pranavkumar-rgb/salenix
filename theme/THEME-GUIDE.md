@@ -1,8 +1,10 @@
-# Salenix theme guide (v2.1)
+# Salenix theme guide (v2.2)
 
 Theme file: `theme/salenix-theme.css` (Salenix_Theme -> theme "Salenix", Public). UI prompts use only the classes below; no inline styles, no new CSS in apps.
 
 Source of the design: `source/src/app/globals.css`, `source/src/lib/brand/tokens.ts`, `source/src/app/layout.tsx`, `source/src/app/dashboard/_components/*`. Light only (the source forces light).
+
+v2.2 (Salenix_Theme rev 6, 2026-11-12, batch TC1 part 1): every rule that lived in the Salenix app stylesheets (MainLayout, Login, Deals, Companies, Contacts, SxDrawer, DealFormBlock, CompanyFormBlock, ContactFormBlock) was appended as the "v2.2" section at the end of the theme (same selectors, duplicates merged), so the cascade order is unchanged. From v2.2 on the Salenix app holds no CSS of its own. New classes are marked (v2.2) below.
 
 ## Fonts
 Loaded by `@import` from Google Fonts at the top of the theme: Inter (body, 400-700), Fraunces (page titles, opsz + wght), Geist Mono (numbers: KPI values, money columns). If the ODC stage gets a Content Security Policy, allow `fonts.googleapis.com` (style) and `fonts.gstatic.com` (font).
@@ -82,7 +84,12 @@ OutSystems UI variables (`--color-primary`, `--color-neutral-0..10`, `--color-ba
 | add `sx-btn-sm` | Small inline row action | `px-2 py-1 text-[11px]` |
 | `sx-link` | Text link ("View all", "Open") | `text-indigo-600 hover:text-indigo-500` |
 
-Replace the default `btn` / `btn-primary` Style Classes with these; do not combine with `btn`.
+Replace the default `btn` / `btn-primary` Style Classes with these; do not combine with `btn`. Exception: a Button inside an OutSystems UI ButtonLoading placeholder MUST keep `btn` (else OS-CLRT-00000 "There are no '.btn' element as a ButtonLoading placeholder child"), e.g. Login Sign in = `btn btn-primary sx-btn sx-btn-primary sx-auth-submit`.
+
+| Class | Where to use | Source |
+|---|---|---|
+| `sx-btn sx-btn-secondary sx-btn-sm sx-btn-delete` | Delete button on the left of an edit-drawer footer (red border and text, red-50 hover) (v2.2) | edit-*-drawer.tsx `border-red-200 text-red-700 hover:bg-red-50` |
+| add `sx-btn-block` | Full-width button inside `sx-form-footer-full` (v2.2) | create-*-form.tsx `w-full` |
 
 ### Forms
 | Class | Where to use | Source |
@@ -93,6 +100,29 @@ Replace the default `btn` / `btn-primary` Style Classes with these; do not combi
 | `sx-field-error` | Validation message text | `text-xs text-red-600` |
 | `sx-checkbox` | Checkbox widget | `h-3.5 w-3.5 text-indigo-600` |
 | `sx-alert-error` | Error banner at the top of a form | `rounded-md bg-red-50 px-3 py-2 text-xs text-red-700` |
+| `sx-form-block` | Root container of a form block (Deal / Company / Contact): no card; inner `sx-stack` gap 16; hides empty `sx-field` and empty validation messages (v2.2) | create-*-form.tsx `flex flex-col gap-4` |
+| `sx-req` | Red asterisk after a required label (v2.2) | `text-red-600` |
+| `sx-label-optional` | "(optional)" text inside a label (v2.2) | `font-normal text-slate-400` |
+| `sx-amount-row` | Amount + Currency grid (1fr + 88px) inside `sx-form-block` (v2.2) | deal-amount-fields.tsx |
+| `sx-margin-field` | Half-width Margin % field (v2.2) | deal-amount-fields.tsx |
+| `sx-input-suffix` + `sx-input-suffix-text` | Wrapper + "%" suffix text over the right edge of the input (v2.2) | deal-amount-fields.tsx |
+| `sx-form-footer` | Button row at the end of a form block; sticky at the drawer bottom inside `sx-drawer-body` (v2.2) | drawer.tsx footer |
+| add `sx-form-footer-create` | Create mode: not sticky, no border, at the end of the form (v2.2) | create-*-form.tsx |
+| add `sx-form-footer-full` | Column layout; use with `sx-btn-block` for the full-width "+ Create …" button (v2.2) | create-*-form.tsx |
+| add `sx-form-footer-edit` | Edit mode: Delete left, Cancel + Save changes right; an `sx-alert-error` inside takes the full row (v2.2) | edit-*-drawer.tsx |
+| `sx-footer-left` | Left group of an edit footer (Delete + inline confirm) (v2.2) | edit-*-drawer.tsx |
+
+### Live duplicate warning (v2.2)
+| Class | Where to use | Source |
+|---|---|---|
+| `sx-dup-warn` | Amber "possible duplicate" box. Contact form: at the top of the form (default). Company form: inside the Name `sx-field` (then 4px top margin, 11px title, 4px list gap) | create-contact-form.tsx / create-company-form.tsx |
+| `sx-dup-title` | Bold first line of the box | same |
+| `sx-dup-list` / `sx-dup-row` | List of matches / one match row (label left, link right) | same |
+| `sx-dup-label` / `sx-dup-sub` | Match name (ellipsis) / secondary text | same |
+| `sx-dup-link` | Link of a match | same |
+| `sx-dup-foot` | Footnote under the list (10.5px) | create-company-form.tsx |
+| `sx-alert-error sx-dup-email` | Red box: contact email already exists | create-contact-form.tsx |
+| `sx-dup-title-error` / `sx-dup-email-text` / `sx-dup-email-link` | Title / text / link inside the red email box | create-contact-form.tsx |
 
 ### Badges and chips
 | Class | Where to use | Source |
@@ -113,7 +143,8 @@ Replace the default `btn` / `btn-primary` Style Classes with these; do not combi
 |---|---|---|
 | `sx-rail` | Left navigation container (maroon gradient, 200px) | sidebar.tsx DesktopSidebar |
 | add `sx-rail-collapsed` | Collapsed rail (56px) | sidebar.tsx `w-14` |
-| `sx-rail-brand` | Logo row at the top of the rail | sidebar.tsx Brand |
+| `sx-rail-brand` | Logo row at the top of the rail (v2.2: wordmark 20px semibold white) | sidebar.tsx Brand |
+| `sx-rail-logo` | Image SalenixLogo (22px) left of the wordmark in UIKit AppLayout RailBrand (v2.2) | lib/brand/logo.tsx |
 | `sx-rail-nav` | Scrollable list of nav groups | sidebar.tsx NavList |
 | `sx-rail-section` | Group label (10px uppercase, white 50%) | sidebar.tsx group h3 |
 | `sx-rail-item` | One nav link; add `sx-active` for the current screen (marigold pill) | sidebar.tsx link |
@@ -126,6 +157,42 @@ Replace the default `btn` / `btn-primary` Style Classes with these; do not combi
 | `sx-shell` | Outer row of the app layout: rail + main (v2.1) | dashboard-shell.tsx |
 | `sx-shell-main` | Right column: top bar + content (v2.1) | dashboard-shell.tsx |
 | `sx-shell-content` | Content area under the top bar (v2.1) | dashboard-shell.tsx main |
+
+v2.2 rail rules (no new class): `a.sx-rail-item` (white 80% text, white hover, marigold `sx-active` pill) beats the OutSystems UI base link colour; `.sx-shell > .sx-rail` is fixed full height (z-index 40) and `.sx-shell-main` gets margin-left = rail width (collapsed width after `sx-rail-collapsed`); both reset below 768px.
+
+### Auth shell (v2.2, Login)
+| Class | Where to use | Source |
+|---|---|---|
+| `sx-auth-layout` | ExtendedClass of LayoutBlank on Login (removes the `.main-content` padding) | auth-shell.tsx |
+| `sx-auth` | Full-height centered page | auth-shell.tsx root |
+| `sx-auth-inner` | 26rem column | auth-shell.tsx |
+| `sx-auth-header` | Logo + wordmark + subtitle, centered | auth-shell.tsx header |
+| `sx-auth-brand` | Wordmark row (28px semibold) | auth-shell.tsx |
+| `sx-auth-logo` | Image SalenixLogo 36px left of the wordmark | lib/brand/logo.tsx |
+| `sx-auth-subtitle` | Line under the wordmark | auth-shell.tsx |
+| `sx-auth-card` | White card around the form (radius 12, padding 24) | sign-in-form.tsx |
+| `sx-auth-password` | Wrapper of the password input (room for the eye toggle) | sign-in-form.tsx |
+| `sx-auth-actions` | Row of the submit button | sign-in-form.tsx |
+| `sx-auth-submit` | Full-width Sign in button (with `btn btn-primary sx-btn sx-btn-primary`) | sign-in-form.tsx |
+
+### Page title group (v2.2)
+| Class | Where to use | Source |
+|---|---|---|
+| `sx-page-titles` | UIKit PageHeader TitleGroup: stacks `sx-page-title` over `sx-page-subtitle` | page header h1 + p |
+
+### List toolbar and filter chips (v2.2)
+| Class | Where to use | Source |
+|---|---|---|
+| `sx-dtoolbar` | Toolbar row: search + New button | deals-view.tsx toolbar |
+| `sx-dsearch` / `sx-dsearch-icon` / `sx-dsearch-input` | Search box wrapper / icon / input (with `sx-input`) | deals-view.tsx search |
+| `sx-fbar` | Filter chip row | deal-filter-bar.tsx / toggle-filter-bar.tsx |
+| `sx-fbar-label` | "Filters" label at the start of the row | same |
+| `sx-fchip` (+ `sx-fchip-active`) | Chip button or dropdown chip (a select gets a caret) | same |
+| `sx-fbar-clear` | "Clear all" link (right) | same |
+| `sx-fbar-end` | Right-aligned group (Clear all + Recently deleted) | toggle-filter-bar.tsx |
+| `sx-fbar-link` (+ `sx-fbar-link-active`) | Text link in the chip row ("Recently deleted") | companies / contacts view |
+| `sx-th-sort` (+ `sx-th-sort-active`) | Sortable table header link | deals-view.tsx headers |
+| `sx-deleted-banner` / `sx-deleted-back` | "Showing deleted … · Back" banner / its Back link | companies / contacts view |
 
 ### Deal path bar (v2.1)
 | Class | Where to use | Source |
@@ -144,6 +211,10 @@ Replace the default `btn` / `btn-primary` Style Classes with these; do not combi
 | `sx-drawer-description` | Line under the title | drawer.tsx p |
 | `sx-drawer-body` | Scrollable form area | drawer.tsx body |
 | `sx-drawer-footer` | Save / Cancel / Delete row | drawer.tsx footer |
+| `sx-drawer-heading` | Title + description block, left of the close button (v2.2) | drawer.tsx header |
+| `sx-drawer-close` | "×" close button on the right (with `sx-btn sx-btn-ghost`) (v2.2) | drawer.tsx close button |
+
+v2.2: the backdrop shows a pointer; the panel is full width below 640px; form blocks put their footer (`sx-form-footer`) inside `sx-drawer-body`.
 
 ### Empty, loading, text helpers
 | Class | Where to use | Source |
@@ -164,4 +235,5 @@ Replace the default `btn` / `btn-primary` Style Classes with these; do not combi
 ## Notes
 - Values copied from Tailwind classes; Tailwind v4 status colours (emerald, amber, rose, red, orange) are written as their hex equivalents.
 - Doubled selectors (`.sx-btn.sx-btn`) only raise specificity above OutSystems UI widget rules; use the single class name in Style Classes.
-- Do not add CSS in other apps; change this file and re-publish Salenix_Theme.
+- Do not add CSS in other apps; change this file and re-publish Salenix_Theme (from v2.2 on the Salenix app stylesheets stay empty).
+- Logo: theme/logo.svg; PNG renders in theme/logo-png/ (512/256/128/64/32, favicon.png = 32). Image SalenixLogo lives in Salenix_UIKit (rail) and on the Salenix Login screen; app icon + favicon are set by hand in Studio.

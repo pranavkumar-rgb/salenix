@@ -1290,3 +1290,253 @@ select.sx-input.sx-input {
   background: var(--sx-maroon-600);
   color: #ffffff;
 }
+
+/* ==========================================================================
+   v2.2 (2026-11-12, batch TC1) - rules moved from the Salenix app stylesheets
+   (MainLayout, Login, Deals, Companies, Contacts, SxDrawer, DealFormBlock,
+   CompanyFormBlock, ContactFormBlock). Same selectors; placed last so they keep
+   the cascade position they had as app CSS (after the theme). The Salenix app
+   holds no CSS of its own from v2.2 on.
+   ========================================================================== */
+
+/* --- v2.2 App shell: rail (MainLayout, L1 + rev 22) --------------------- */
+/* OutSystems UI base link colour beats .sx-rail-item; anchor-qualified copies win */
+a.sx-rail-item,
+a.sx-rail-item:visited,
+a.sx-rail-item .icon {
+  color: rgba(255, 255, 255, 0.8);
+}
+a.sx-rail-item:hover,
+a.sx-rail-item:focus {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  text-decoration: none;
+}
+a.sx-rail-item.sx-active,
+a.sx-rail-item.sx-active:visited,
+a.sx-rail-item.sx-active:hover {
+  color: var(--sx-ink-950);
+  background: var(--sx-marigold-500);
+}
+a.sx-rail-item:hover .icon {
+  color: #ffffff;
+}
+a.sx-rail-item.sx-active .icon {
+  color: var(--sx-ink-950);
+}
+/* dashboard-shell.tsx h-screen + sidebar.tsx: rail fixed full height, content scrolls */
+.sx-shell.sx-shell > .sx-rail.sx-rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  height: 100vh;
+  min-height: 0;
+  z-index: 40;
+}
+.sx-shell.sx-shell > .sx-shell-main {
+  margin-left: var(--sx-rail-width);
+}
+.sx-shell.sx-shell > .sx-rail.sx-rail-collapsed + .sx-shell-main {
+  margin-left: var(--sx-rail-width-collapsed);
+}
+@media (max-width: 767px) {
+  .sx-shell.sx-shell > .sx-rail.sx-rail {
+    position: static;
+    height: auto;
+  }
+  .sx-shell.sx-shell > .sx-shell-main {
+    margin-left: 0;
+  }
+}
+/* sidebar.tsx Brand wordmark: text-[20px] font-semibold tracking-[-0.025em] white */
+.sx-rail-brand.sx-rail-brand {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 28px;
+  color: #ffffff;
+}
+/* lib/brand/logo.tsx SaleinxIcon 22px left of the wordmark (Image SalenixLogo in UIKit AppLayout RailBrand) */
+.sx-rail-logo {
+  display: block;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+}
+
+/* --- v2.2 Page header title group (UIKit PageHeader TitleGroup) --------- */
+/* source h1 + p: title and subtitle stacked */
+.sx-page-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sx-page-titles .sx-page-title,
+.sx-page-titles .sx-page-subtitle {
+  display: block;
+}
+
+/* --- v2.2 Auth shell (Login, L2; source auth-shell.tsx + sign-in-form.tsx) */
+.layout.layout.sx-auth-layout .main-content {
+  padding: 0;
+  margin: 0;
+  max-width: none;
+}
+.sx-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 48px 16px;
+  box-sizing: border-box;
+  background: var(--sx-bg);
+}
+.sx-auth-inner {
+  width: 100%;
+  max-width: 26rem;
+}
+.sx-auth-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+}
+.sx-auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--sx-font-body);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 36px;
+  color: var(--sx-ink-900);
+}
+/* SaleinxIcon 36px left of the wordmark (Image SalenixLogo on Login) */
+.sx-auth-logo {
+  display: block;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+}
+.sx-auth-subtitle {
+  margin-top: 16px;
+  font-size: var(--sx-fs-13);
+  color: var(--sx-ink-500);
+}
+.sx-auth-card {
+  background: var(--sx-surface);
+  border: 1px solid var(--sx-border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 10px 15px -3px rgba(249, 239, 232, 0.6), 0 4px 6px -4px rgba(249, 239, 232, 0.6);
+}
+.sx-auth-card .sx-field {
+  margin-bottom: 16px;
+}
+.sx-auth-password .sx-input.sx-input {
+  padding-right: 36px;
+}
+.sx-auth-actions {
+  margin-top: 4px;
+}
+.sx-btn.sx-btn-primary.sx-auth-submit {
+  width: 100%;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13.5px;
+}
+
+/* --- v2.2 List toolbar, filter chips, sort headers (Deals L3, Companies / Contacts L3b) */
+/* deals-view.tsx toolbar row: search + New button */
+.sx-dtoolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.sx-dsearch { position: relative; flex: 1 1 auto; min-width: 0; }
+.sx-dsearch .sx-dsearch-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--sx-ink-400); font-size: 14px; line-height: 1; pointer-events: none; z-index: 1; }
+.sx-dsearch input.sx-input.sx-dsearch-input { width: 100%; padding-left: 36px; border-radius: var(--sx-radius-lg); }
+/* deal-filter-bar.tsx / toggle-filter-bar.tsx chip row */
+.sx-fbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 16px; }
+.sx-fbar-label { display: inline-flex; align-items: center; gap: 4px; margin-right: 4px; font-size: var(--sx-fs-11); color: var(--sx-ink-500); }
+.sx-fbar .sx-fchip.sx-fchip { display: inline-flex; align-items: center; gap: 4px; width: auto; height: auto; min-height: 0; margin: 0; padding: 4px 8px; border: 1px solid var(--sx-border); border-radius: var(--sx-radius-md); background-color: var(--sx-surface); color: var(--sx-ink-600); font-size: var(--sx-fs-11); font-weight: 500; line-height: 1.4; box-shadow: none; cursor: pointer; transition: background-color 0.15s ease, border-color 0.15s ease; }
+.sx-fbar .sx-fchip.sx-fchip:hover { background-color: var(--sx-surface-muted); }
+.sx-fbar .sx-fchip.sx-fchip.sx-fchip-active { border-color: var(--sx-maroon-200); background-color: var(--sx-maroon-50); color: var(--sx-maroon-700); }
+.sx-fbar select.sx-fchip.sx-fchip { -webkit-appearance: none; appearance: none; padding-right: 22px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 11px) 55%, calc(100% - 7px) 55%; background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; }
+.sx-fbar .sx-fbar-clear { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 4px 8px; border-radius: var(--sx-radius-md); font-size: var(--sx-fs-11); font-weight: 500; color: var(--sx-ink-600); text-decoration: none; cursor: pointer; }
+.sx-fbar .sx-fbar-clear:hover { background-color: var(--sx-surface-muted); color: var(--sx-ink-900); }
+.sx-fbar .sx-fbar-end { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
+.sx-fbar .sx-fbar-end .sx-fbar-clear { margin-left: 0; }
+.sx-fbar .sx-fbar-link { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: var(--sx-radius-md); font-size: var(--sx-fs-11); font-weight: 500; color: var(--sx-ink-500); text-decoration: none; cursor: pointer; }
+.sx-fbar .sx-fbar-link:hover { background-color: var(--sx-surface-muted); color: var(--sx-ink-900); }
+.sx-fbar .sx-fbar-link.sx-fbar-link-active { color: var(--sx-maroon-700); }
+/* sortable table headers */
+.sx-th-sort { cursor: pointer; user-select: none; }
+.sx-th-sort:hover { color: var(--sx-ink-900); }
+.sx-th-sort-active { color: var(--sx-maroon-700); }
+/* "Showing deleted …" banner */
+.sx-deleted-banner { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 12px; border: 1px solid var(--sx-warning-200); border-radius: var(--sx-radius-md); background-color: var(--sx-warning-50); color: var(--sx-warning-800); font-size: var(--sx-fs-12); }
+.sx-deleted-banner .sx-deleted-back { color: var(--sx-maroon-700); font-weight: 500; text-decoration: none; cursor: pointer; }
+.sx-deleted-banner .sx-deleted-back:hover { text-decoration: underline; }
+@media (max-width: 640px) { .sx-dtoolbar { flex-wrap: wrap; } .sx-fbar .sx-fbar-clear { margin-left: 0; } .sx-fbar .sx-fbar-end { margin-left: 0; } }
+
+/* --- v2.2 Drawer additions (SxDrawer, L4 + L5; source drawer.tsx) ------- */
+.sx-drawer .sx-drawer-backdrop { cursor: pointer; }
+.sx-drawer .sx-drawer-header .sx-btn { flex: 0 0 auto; }
+@media (max-width: 640px) { .sx-drawer .sx-drawer-panel { max-width: 100%; } }
+/* header: title block left, X right */
+.sx-drawer .sx-drawer-header .sx-drawer-heading { flex: 1 1 auto; min-width: 0; }
+.sx-drawer .sx-drawer-header .sx-drawer-title { display: block; }
+.sx-drawer .sx-drawer-header .sx-drawer-description { display: block; }
+.sx-drawer .sx-drawer-header .sx-drawer-close { flex: 0 0 auto; margin-left: auto; padding: 4px 8px; font-size: 20px; line-height: 20px; color: var(--sx-ink-500); }
+.sx-drawer .sx-drawer-header .sx-drawer-close:hover { background-color: var(--sx-cream-100); color: var(--sx-ink-700); }
+
+/* --- v2.2 Form blocks (Deal / Company / Contact form, L4 + L5 + L5b) ---- */
+/* form footer row; pinned at the drawer bottom in edit mode */
+.sx-form-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--sx-border); }
+.sx-drawer .sx-drawer-body .sx-form-footer { position: sticky; bottom: -16px; z-index: 1; margin: 16px -20px -16px; padding: 12px 20px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--sx-border); background-color: var(--sx-surface); }
+/* create mode: full-width button at the end of the form, not pinned (source create-*-form.tsx) */
+.sx-drawer .sx-drawer-body .sx-form-footer.sx-form-footer-create { position: static; margin: 16px 0 0; padding: 0; border-top: 0; background-color: transparent; }
+.sx-form-footer.sx-form-footer-full { flex-direction: column; align-items: stretch; }
+.sx-form-footer.sx-form-footer-full .sx-btn-block { width: 100%; }
+/* edit mode: Delete left, Cancel + Save changes right (source edit-*-drawer.tsx) */
+.sx-form-footer.sx-form-footer-edit { flex-wrap: wrap; justify-content: flex-end; }
+.sx-form-footer.sx-form-footer-edit .sx-alert-error { flex: 1 1 100%; }
+.sx-form-footer .sx-footer-left { margin-right: auto; display: flex; align-items: center; gap: 8px; }
+/* form body: flex-col gap-4, no card */
+.sx-form-block { margin: 0; padding: 0; border: 0; box-shadow: none; background: transparent; }
+.sx-form-block .sx-stack { gap: 16px; }
+.sx-form-block .sx-field { margin-bottom: 0; }
+.sx-form-block .sx-field:empty, .sx-form-block .validation-message:empty { display: none; }
+/* required asterisk / "(optional)" in labels */
+.sx-req { margin-left: 2px; color: var(--sx-danger-600); }
+.sx-label-optional { font-weight: 400; color: var(--sx-ink-400); }
+/* deal-amount-fields.tsx: Amount + Currency row, half-width Margin, % suffix */
+.sx-form-block .sx-amount-row { display: grid; grid-template-columns: minmax(0, 1fr) 88px; gap: 12px; }
+.sx-form-block .sx-margin-field { width: calc(50% - 6px); }
+.sx-form-block .sx-input-suffix { position: relative; }
+.sx-form-block .sx-input-suffix .sx-input { padding-right: 28px; }
+.sx-form-block .sx-input-suffix-text { position: absolute; top: 0; bottom: 0; right: 12px; display: flex; align-items: center; font-size: 13px; color: var(--sx-ink-400); pointer-events: none; }
+/* Delete button: small, border-red-200 text-red-700 hover:bg-red-50 */
+.sx-btn.sx-btn.sx-btn-delete { border-color: var(--sx-negative-200); background-color: transparent; color: var(--sx-negative-700); }
+.sx-btn.sx-btn.sx-btn-delete:hover { background-color: var(--sx-negative-50); }
+
+/* --- v2.2 Live duplicate warning (Company / Contact form, L5b) ---------- */
+/* contact form (source create-contact-form.tsx): amber name box at the top of the form */
+.sx-dup-warn { padding: 10px; border: 1px solid var(--sx-warning-200); border-radius: var(--sx-radius-md); background-color: var(--sx-warning-50); font-size: 12px; color: var(--sx-warning-800); }
+.sx-dup-title { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 600; color: var(--sx-warning-800); }
+.sx-dup-list { display: flex; flex-direction: column; gap: 2px; }
+.sx-dup-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sx-dup-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sx-warning-800); }
+.sx-dup-sub { color: var(--sx-warning-700); }
+.sx-dup-link { flex: 0 0 auto; font-weight: 500; text-decoration: underline; color: var(--sx-warning-800); }
+/* company form (source create-company-form.tsx): box sits inside the Name field, text-[11px] title, space-y-1 */
+.sx-field .sx-dup-warn { margin-top: 4px; }
+.sx-field .sx-dup-title { margin-bottom: 4px; font-size: 11px; }
+.sx-field .sx-dup-list { gap: 4px; }
+.sx-dup-foot { display: block; margin-top: 6px; font-size: 10.5px; color: var(--sx-warning-700); }
+/* contact email already exists: red box (with sx-alert-error) */
+.sx-dup-email { padding: 10px; border: 1px solid var(--sx-negative-200); font-size: 12px; }
+.sx-dup-title-error { display: block; font-weight: 600; color: var(--sx-negative-700); }
+.sx-dup-email-text { margin-top: 2px; color: var(--sx-negative-700); }
+.sx-dup-email-link { font-weight: 500; text-decoration: underline; color: var(--sx-negative-700); }
