@@ -1611,3 +1611,16 @@ Mentor scan (report only) of the same pattern: DealOrderProof_Add / OtherDealPro
 Expected T13 re-run (dry run): deleted 1 (row 230), already gone 248, created 0, already there 242 — or, if the real run has not been done yet, deleted 249, created 242.
 ### DealOrderProof_Add OtherDealProof — fix NOT published (source parity, 2026-11-13)
 User asked for the NULL-safe filter on OtherDealProof filter 3 (`Deal.CompanyId = FindDeal…Deal.CompanyId`). Mentor session 5122b5f3 applied it (read back OK, 0 errors), but the parity check found that the source runs this check ONLY when the deal has a company (source/src/app/dashboard/deals/[id]/order-proof-actions.ts:209-226, `if (deal.companyId)`; message "PO … is already attached to "…" for this client. One PO can back one deal."). So the current rev 33 behaviour (no-company deals never clash) = source. Draft discarded by closing the session unpublished; Sales stays rev 33 (env_app verified). Waiting for the user: keep the source rule, or deliberate deviation (no-company deals clash with each other on the same PO reference).
+
+## Z1 — zero amounts show "₹0" everywhere — Salenix rev 70 (2026-11-13 14:30 UTC, env_app verified; Mentor session 4f876681, closed)
+Trigger: Deals list showed "₹0.00" for the 242 imported deals (amount 0).
+### Parity checklist (source lib/deals/currency.ts formatCurrency: null → "—", else Intl en-US currency with 2 decimals; schema deals.amount_minor NOT NULL default 0)
+| Place | Source shows for 0 | Rebuild before | After | Mark |
+|---|---|---|---|---|
+| Deals list amount (deals-view.tsx:1740) | ₹0.00 | ₹0.00 | ₹0 | different on purpose (V0 user rule "₹0") |
+| Board card / column totals / Hold lane (deal-card.tsx:259, board-column.tsx:212-232) | ₹0.00 | ₹0 (V0-1) | unchanged | different on purpose (V0) |
+| Deal detail amount (page.tsx:336, header) | ₹0.00 | ₹0 (0 decimals) | unchanged | different on purpose (earlier U2 / V0) |
+| Dashboard highlights (deal-highlights.tsx) / Home lists, KPI tiles, stage totals | ₹0.00 / compact | ₹0.00 / ₹0.0 | ₹0 | different on purpose (V0) |
+| "—" for empty | only null, never for an amount (NOT NULL column) | — | no "—" added | same |
+Elements (FractionDigits only → If(x = 0, 0, current); amount / currency / compact args unchanged; 17 expressions): Deals DealsTable + DeletedTable; DealDetail proof rows Subtotal / Tax / Total; Home KPI open pipeline + won this month (1), recently updated + top deals (2), stage totals (1); Companies open pipeline + won lifetime (2); CompanyDetail KPI open pipeline + won lifetime (1), deals list (2); Approvals pending list (2); AdminHome average deal size tooltip (2). Already zero-safe, unchanged: board (5), DealDetail header / context / proofs summary, AdminHome KPI tiles / stage rows / other tooltips (0 decimals), DrawTrend JS (maximumFractionDigits 0). No money on Contacts / ContactDetail / Tasks / CommandPalette. Validation 0 errors, 109 known warnings. Not verifiable by Mentor: the UIKit Money_FormatText / MoneyText internals (compact path with 0 digits) → browser check.
+Browser check (look only, Vizion allowed for viewing; no writes): Deals list imported deals → "₹0"; Home tiles / lists; Companies list columns; a company detail KPIs; Deal detail with a proof (CGB India).
