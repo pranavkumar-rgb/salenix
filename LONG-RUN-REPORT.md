@@ -1256,3 +1256,57 @@ Deliberate choices: popovers = If + absolutely placed panel + transparent full-s
 | D18 | Company timeline source pill without SourceName | "Deal" / "Contact" without name | activity rows have no SourceName |
 | D19 | Tasks rail item | all personas (source: sales only) | user asked for the rail item |
 | D20 | Viewer on task drawer | edit controls hidden | source quirk shows them |
+
+## U1 Deals list chips, sort direction, Recently deleted — parity checklist (source deal-filter-bar.tsx, deals-view.tsx, page.tsx)
+Studio step done by the user: Theme rev 8 released, Salenix rev 39 = reference refresh (env_app verified).
+| # | Item | Source | Rebuild (Deals screen) | Status |
+|---|---|---|---|---|
+| 1 | Row start | funnel icon + "Filter" | existing FilterLabel | same |
+| 2 | Chip order | Stage▾ · Amount▾ · Close date▾ · My deals · Unassigned · Stale only · Awaiting approval · Approved · Won · PO missing · Health▾ · Revisit due · Slipped only · Company▾ · Owner▾ · Clear all (right) | same order; "Include won/lost" (L3) after Owner▾ | same + L3 chip kept |
+| 3 | Chip look | inactive slate border, active indigo tint; popover chips with ▾ and × when active | sx-fchip / sx-fchip-active, caret sx-fchip-caret; × = Link sx-fchip-x right after the chip (not inside its border: a Link inside the chip would take the link colour) | different on purpose (tiny visual) |
+| 4 | Stage▾ | multi-select list of 7 stages with check squares; label "Stage" / "Stage: Lead, Qualified"; × clears | popover sx-fpop + sx-fpop-item / sx-fpop-check; StageCodes comma text → Deal_List StageCodes; label from StageOptions labels | same |
+| 5 | Amount▾ | Min / Max (major units, placeholders "0" / "∞"), hint "Values are in major currency units (e.g. 5000 = ₹5,000 or $5,000 depending on the deal's own currency).", Clear / Apply; label "Amount: ≥5,000 · ≤20,000" | same texts; ×100 → AmountMinorMin / Max; ≤ 0 = no filter (decision 25(5)) | same |
+| 6 | Close date▾ | From / To date, Clear / Apply; label "Close: 2026-11-01 → 2026-11-30" (… for an open side) | same → CloseFrom / CloseTo | same |
+| 7 | My deals / Unassigned | toggles, mutually exclusive | MineChip (OwnerFilter = me) / UnassignedChip → Unassigned; each clears the other | same |
+| 8 | Stale only | stale=true | StaleOnly (server default 14 days) | same |
+| 9 | Awaiting approval / Approved | mutually exclusive | existing chips | same |
+| 10 | Won · PO missing | tooltip "Won deals whose client PO is missing or doesn't match the deal value" | PoMissing, Title = tooltip | same |
+| 11 | Health▾ | single select "Strong (≥70)" / "Moderate (40–69)" / "Weak (<40)" with dots; label "Health" / "Health: Strong"; picking the active one clears; closes on pick | ScoreBand strong / moderate / at_risk | same (D1) |
+| 12 | Revisit due / Slipped only | toggles; Slipped tooltip "Deals whose expected close date has been pushed out at least once" | RevisitDue / SlippedOnly | same |
+| 13 | Company▾ | search "Search companies…", multi-select names, "No matches", Clear; label "Company: <name>" / "<n> selected" | single select (D2): Company_ListOptions(Search) (max 20), selected row active; label "Company: <name>" | different on purpose |
+| 14 | Owner▾ | search "Search teammates…", multi-select, Clear; label "Owner: <name>" / "Owner: <n> selected"; shown only when teammates exist | GetOwners (Member_ListOptions) filtered on the client by Label / Email (max 50); OwnerIds → OwnerUserIds | same |
+| 15 | Clear all | only when any filter active, clears all filters (keeps search) | ClearFilters resets every chip variable + popover; search kept | same |
+| 16 | Popover close | click outside (transparent layer) | sx-fpop-backdrop Link → ClosePopover; one popover open at a time (OpenPopover text) | same |
+| 17 | Sort | source: recent / risk only | header links Name / Amount / Close date: 1st click asc (Amount: desc as today), 2nd click flips, 3rd back to "updated"; arrow ↑ / ↓; SortDir asc / desc | our addition (D4, L14) |
+| 18 | Recently deleted | separate page /dashboard/recently-deleted | link "Recently deleted" in sx-fbar-end for deleteDeals (owner / admin) → ShowDeleted → Deal_List IncludeDeleted; banner "Showing deleted deals · Back"; columns Name, Amount, Company, Deleted on, Restore (UI_Deal_Restore, message "Deal restored."); chips stay visible and still filter the deleted list | different on purpose (D5, as L3b) |
+| 19 | Empty states | "No matches" / filters / "No deals yet" | + deleted view "No deleted deals" / "Deleted deals show up here for 30 days." → kept short: "No deleted deals" + "Deals you delete show up here." | rebuild text (source page differs) |
+| 20 | Server inputs | — | Deal_List: StageCode "" (StageCodes instead), OwnerUserIds, Unassigned, StaleOnly, PoMissing, RevisitDue, SlippedOnly, ScoreBand, AmountMinorMin / Max, CloseFrom / To, CompanyId, SortDir, IncludeDeleted | same |
+| 21 | Not built | saved views, bulk select / delete, column chooser, risk sort / filter, offering filters, custom fields | — | backlog |
+
+### U1 result — Salenix rev 40 (published 2026-11-13 05:13 UTC, env_app verified; Mentor session 1bdd272c, steps U1a logic / U1b chips / U1c popovers + deleted view)
+| Element | Change |
+|---|---|
+| Deals variables | NEW StageCodes, OwnerIds, CompanyFilterId, CompanyFilterName, ScoreBand, AmountMinMinor, AmountMaxMinor, AmountMinText, AmountMaxText, CloseFrom, CloseTo, CloseFromDraft, CloseToDraft, Unassigned, StaleOnly, PoMissing, RevisitDue, SlippedOnly, ShowDeleted, SortDir, OpenPopover, CompanySearch, OwnerSearch (StageFilter kept, unused) |
+| GetDeals | Deal_List StageCode "" + StageCodes, OwnerUserIds, Unassigned, StaleOnly, PoMissing, RevisitDue, SlippedOnly, ScoreBand, AmountMinorMin / Max, CloseFrom / To, CompanyId, SortDir, IncludeDeleted = ShowDeleted (read back) |
+| GetCanDelete (NEW data action) | Foundation_GetMyContext → Foundation_HasPermission(RoleCode, "deleteDeals") → CanDelete; AllExceptions → False |
+| GetCompanyOptions (NEW, on demand) | Company_ListOptions(CompanySearch) |
+| Client actions NEW | TogglePopover, ClosePopover, ToggleStage, ToggleOwnerId (comma add / remove, read back), SetScoreBand, SelectCompany, ApplyAmount (×100, DecimalToLongInteger), ApplyClose, ClearStages / Amount / Close / Score / Company / Owners, ToggleUnassigned, ToggleStale, TogglePoMissing, ToggleRevisitDue, ToggleSlipped, ToggleDeleted, CompanySearchChanged, RestoreDeal, functions StageChipLabel(Codes, StageOptions), OwnerChipLabel(Ids, Owners) |
+| Client actions CHANGED | ToggleMine (+ Unassigned = False), ClearFilters (+ all new filters, SortDir, OpenPopover; Search kept), SortByColumn (new column → asc / value desc; same column first direction → flip; else back to "updated") |
+| UI_Deal_Restore (NEW server) | as UI_Company_Restore, calls Deal_Restore |
+| FilterBar | order: Filter · Stage▾ · Amount▾ · Close date▾ · My deals · Unassigned · Stale only · Awaiting approval · Approved · Won · PO missing · Health▾ · Revisit due · Slipped only · Company▾ · Owner▾ (only with members) · Include won/lost · FilterEnd (Clear all + Recently deleted for deleteDeals). StageDropdown and OwnerDropdown deleted |
+| Deleted view | If ShowDeleted: DeletedBanner "Showing deleted deals · Back"; ResultsTables If → DeletedTable (Name, Amount, Company, Deleted on, Restore) else DealsTable (recreated by Mentor inside the If; cells read back = unchanged); EmptyState "No deleted deals" / "Deals you delete show up here." / trash |
+| Sort headers | Name ↑/↓, Amount ↓/↑, Close date ↑/↓ by SortDir |
+Validation 0 errors; warnings = known icon warnings + unused ApplyFilters, UI_ApprovalOptions, UI_DealSortOptions, StageFilter + 1 "If directly under a List" suggestion (Owner list). Cleanup later.
+Browser tests U1 (CGB India; filters are read-only, safe anywhere):
+1. Stage▾ → tick Lead + Qualified → chip "Stage: Lead, Qualified", list shows only those; × clears.
+2. Amount▾ Min 100000 → Apply → chip "Amount: ≥100,000", only deals ≥ ₹1,00,000; Clear.
+3. Close date▾ From/To this month → chip "Close: 2026-11-01 → 2026-11-30".
+4. My deals then Unassigned → only one active at a time.
+5. Health▾ Strong → chip "Health: Strong"; pick Strong again → cleared.
+6. Company▾ type part of a name → list narrows → pick → chip "Company: <name>".
+7. Owner▾ tick two owners → "Owner: 2 selected".
+8. Won · PO missing → only Won deals without matching PO (tooltip on hover).
+9. Clear all resets every chip, search text stays.
+10. Header Amount: ↓ (desc) → click again ↑ → third click back to default order.
+11. As owner/admin: "Recently deleted" visible; as member/manager: hidden. Delete a demo deal (U2 adds the button; until then via DevTools) → appears here with "Deleted on"; Restore → "Deal restored." and it leaves the list.
+12. Click outside an open popover closes it; only one popover open at a time.
