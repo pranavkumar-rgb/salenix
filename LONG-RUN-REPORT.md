@@ -1521,3 +1521,19 @@ Salenix rev 67 (09:40 UTC, env_app verified; Mentor session 894aac1b closed): De
 5. Empty Deal Name on create → "Pick a deal name.".
 6. Contacts: Company filter search; Home (admin) rep filter search; task drawer: Linked to → Deal → type to search deals; Assignee search; Pipeline / Deals company chip typing waits 250 ms.
 7. Check the look of lists that hold their own "" row (task Type / Repeat / Stage blocking): empty value shows "Select…" (known; tell me if you want "—" / "None" there).
+
+## Decision 26 — searchable dropdowns always (user request 2026-11-13, deliberate deviation from the source)
+Rule in CLAUDE.md decision 26: every new select in Salenix / Salenix_Admin (forms, drawers, filters) is a search select; large / growing lists search on the server (search text + IncludeId); small fixed lists filter on the client; source empty labels kept; action menus excluded; every parity checklist carries "All new selects are search selects: yes/no". Source uses plain <select> everywhere → logged as a deliberate difference.
+### Audit — Salenix rev 67 (Mentor read-only, session 8f115f4e, nothing changed)
+Plain Dropdown widgets left (all native, class sx-input, all action menus → allowed by the rule):
+| Screen / block | Widget | Empty text | Variable | Options | Use |
+|---|---|---|---|---|---|
+| MainLayout | WorkspaceDropdown | (blank) | SelectedTenantId | GetShell.Workspaces | action menu → SwitchWorkspace |
+| DealDetail | MoveTarget2 | "Change stage…" | MoveTarget | StageOptions | action menu → MoveTargetOnChange |
+| BoardDealCard | MoveTargetDropdown | "Move stage…" | MoveTarget | StageOptions | action menu → MoveChanged |
+No plain Dropdown is left as a form field or filter. Filter popovers: Deals / Pipeline Company (server search, 250 ms) and Owner (search input, client filter) have search; Stage (multi, 7 rows) and Health (3 fixed links) have none.
+Gaps against decision 26 (not changed in this step):
+1. Stage filter popovers (Deals, Pipeline) have no search input (small fixed list → client filter required by the rule).
+2. Health popover (3 fixed links) has no search — decide whether a 3-row list needs one.
+3. Users / owners search on the client (MemberSelect, Owner popovers over Member_ListOptions("") ≤ 200 rows), the rule says server: Member_ListOptions already takes Search (no IncludeId) → switch MemberSelect / owner popovers to server search (+ Foundation IncludeId, add-only) or record an exception.
+4. Empty labels: lists that hold their own "" row (task Type "—", Repeat "No repeat", Stage blocking "None") show "Select…" when empty in SxSearchSelect → violates "keep the source empty labels"; fix in SxSearchSelect (empty value → label of the option with Value "") or per field.
