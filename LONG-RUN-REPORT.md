@@ -1537,3 +1537,18 @@ Gaps against decision 26 (not changed in this step):
 2. Health popover (3 fixed links) has no search — decide whether a 3-row list needs one.
 3. Users / owners search on the client (MemberSelect, Owner popovers over Member_ListOptions("") ≤ 200 rows), the rule says server: Member_ListOptions already takes Search (no IncludeId) → switch MemberSelect / owner popovers to server search (+ Foundation IncludeId, add-only) or record an exception.
 4. Empty labels: lists that hold their own "" row (task Type "—", Repeat "No repeat", Stage blocking "None") show "Select…" when empty in SxSearchSelect → violates "keep the source empty labels"; fix in SxSearchSelect (empty value → label of the option with Value "") or per field.
+
+## V1 decision-26 gap fixes — parity checklist (user request 2026-11-13; source deal-filter-bar.tsx stage popover has no search; source selects show their own empty option)
+| # | Item | Source | Rebuild | Status |
+|---|---|---|---|---|
+| 1 | Stage filter popover (Deals, Pipeline) | checkbox list, no search | + search input above the rows ("Search stages…"), client filter on the label; multi-select, chip label and refresh unchanged | different on purpose (decision 26) |
+| 2 | Health popover | 3 fixed options | unchanged | same (decision 26 exception ≤ 3 options) |
+| 3 | Owner / member lists | full list | unchanged, client filter over Member_ListOptions (≤ 200) | decision 26 exception (server search when a workspace has > 150 members) |
+| 4 | Empty value of a select whose list holds a "" option (task Type "—", Repeat "No repeat", Stage blocking "None") | native select shows that option | SxSearchSelect shows that option's label instead of the placeholder "Select…"; fields without a "" option keep their placeholder / EmptyLabel | same as source |
+All new selects are search selects: yes (no new selects; one popover gains search).
+### V1 result — Salenix rev 68 (2026-11-13 10:18 UTC, env_app verified; Mentor session ac56c7fa)
+- SxSearchSelect: locals HasEmptyOption / EmptyOptionLabel set in DisplayLabel (ListIndexOf Value = "", guarded); empty value → If(EmptyLabel <> "", EmptyLabel, EmptyOptionLabel); IfPlaceholder = Value = "" and EmptyLabel = "" and not HasEmptyOption.
+- Read-back task drawer (EntityTasksPanel): TypeSelect "" → "—"; RepeatSelect "" → "No repeat"; StageBlockingSelect "" → "None"; PrioritySelect has no "" row (default medium → "Medium"). DealTypeSelect keeps EmptyLabel "—".
+- Deals + Pipeline StagePopover: local StageSearch; Input_StageSearch first in the popover (class sx-fpop-input as Input_CompanySearch, prompt "Search stages…"); row If IfStageVisible = Trim(StageSearch) = "" or Index(ToLower(StageOptions.Current.Label), ToLower(Trim(StageSearch))) <> -1; ToggleStage / checkbox / chip label unchanged; TogglePopover resets StageSearch.
+- Health / owner lists unchanged (decision 26 exceptions). Validation 0 errors, 109 warnings (known types).
+Tests (CGB India): Deals and Pipeline → Stage chip → type "neg" → only Negotiation; tick it → chip "Stage: Negotiation", list refreshes; reopen → search empty. Deal detail → Tasks → new task → Type shows "—", Repeat "No repeat", Stage blocking "None".
