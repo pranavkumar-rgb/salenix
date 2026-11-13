@@ -20,7 +20,7 @@ Details (parity checklist per batch, read-back notes, test steps): LONG-RUN-REPO
 **git:** local commits only — `git push` was blocked by the local permission check. Please run `git push`.
 
 ## Your one Studio step
-Open a fresh copy of **Salenix** (rev 36) → Manage Dependencies → **Salenix_Sales** → refresh to rev 28 and tick everything in the list below (nothing else) → publish from Studio. Existing screens keep working unchanged; Deal_List / Company_List / Contact_List only get new optional inputs.
+Open a fresh copy of **Salenix** (rev 36) → Manage Dependencies → **Salenix_Sales** → refresh to rev 29 (rev 28 + N10 task comments, no signature change) and tick everything in the list below (nothing else) → publish from Studio. Existing screens keep working unchanged; Deal_List / Company_List / Contact_List only get new optional inputs.
 
 ## Reference list for the Salenix app (Salenix_Sales rev 28), grouped by screen
 All are public service actions; the client never sends tenant / user / role (acting context on the server; persona "sales" = own + unassigned).
@@ -74,7 +74,8 @@ All are public service actions; the client never sends tenant / user / role (act
 
 **Tick list in Studio (22 actions + 9 structures):** Deal_SoftDelete, Deal_Restore, Deal_UpdateContextField, Task_List, Task_Create, Task_Update, Task_SetCompleted, Task_Delete, Note_List, Note_Create, Note_Update, Note_Delete, Comment_List, Comment_Create, Comment_Delete, Activity_ListFor, Dashboard_GetKpis, Deal_ListBoard, Search_All, Offering_List, Offering_ListForDeal, Deal_SetOfferings; TaskItem, NoteItem, CommentItem, TimelineItem, TrendWeekItem, BoardColumn, BoardCardItem, SearchHitItem, OfferingItem; plus refresh of Deal_List, Company_List, Contact_List, DealListItem.
 
-## Open questions (your decision)
+## Open questions — DECIDED 2026-11-13 (CLAUDE.md decision 25): 1 keep fix; 2 built as N10 (Sales rev 29: Comment_* accept EntityType "task"); 3 Deal_SetOfferings stays separate; 4 no seed now; 5–8 accepted.
+### Original questions
 1. Task_Update writes type / recurrence / stage blocking — the source's full update silently drops them (looks like a source bug). Kept as a fix; say if you want source behaviour.
 2. Task comments: source has a separate task_comments table (author-only edit, hard delete). Sales has no such entity; Comment_* accept only deal / company / contact. Allow EntityType "task" in Comment_* (CLAUDE.md app map already says Comment.EntityType incl. task) or add a TaskComment entity?
 3. Offerings on Deal_Create / Deal_Update: the source requires an offering on create when the switch is on. I did not touch the tested create / update; the UI would call Deal_SetOfferings after saving. OK, or wire into Deal_Create?

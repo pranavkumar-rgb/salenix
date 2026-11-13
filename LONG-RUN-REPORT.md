@@ -1195,3 +1195,29 @@ Tests (CGB India; needs Offering rows + OfferingsEnabled on — no offering data
 - No data written by me in any workspace (no DevOnly_*, seed, import or test call). Nothing deleted or renamed. Only Salenix_Sales changed. No Studio, no Production.
 - MCP note: one long Mentor prompt (N3a, ~5.5 KB with many quoted expressions) was refused by the gateway with a CloudFront 403 "Request blocked"; splitting it into smaller prompts written partly in words worked.
 - git push was blocked by the local auto-mode permission check; commits are local — push them by hand.
+
+# N10 task comments — Salenix_Sales rev 29 (2026-11-13, user decision 25(2))
+Decisions on the run N open questions recorded in CLAUDE.md decision 25. N10 = item 2: Comment_* accept EntityType "task". Mentor session c3d7ed48; read-only read of Sales_EntityVisible / Comment_Create / Comment_List / Comment_Delete / Task_List first.
+### Parity checklist (source app/dashboard/tasks/comments-actions.ts, lib/task-comments/queries.ts)
+| # | Item | Source | Rebuild | Status |
+|---|---|---|---|---|
+| 1 | Storage | separate task_comments table | Comment rows with EntityType "task" (no TaskComment entity) | different on purpose (user decision) |
+| 2 | Permission | manageDeals for load / create / edit / delete | create: manageDeals (new Switch branch); delete: manageDeals (unchanged, all types); list: no permission, visibility only (as deal / company / contact comments) | same for writes |
+| 3 | Parent task | must exist in tenant (deleted tasks not excluded), else "Task not found" | Sales_EntityVisible task branch: exists in tenant, not deleted, persona scope (sales: assigned to me or unassigned) → else "Record not found in this tenant." | different on purpose (task scope, soft delete) |
+| 4 | Body | trimmed, 1–4000 | 1–8000 (same rule as other comments, Comment.Body 8000) | different on purpose (one comment model) |
+| 5 | Create activity | on the task: updated {kind task_comment, commentId, commentPreview 80, taskTitle} | same (Metadata If(Type = "task", …)) | same |
+| 6 | Mentions / notifications | none | @[Name](id) mentions notify as for other comments | different on purpose (one comment model; UI may hide mentions on tasks) |
+| 7 | Edit | author only, edited_at | not built for any comment type (backlog N5 #8) | backlog |
+| 8 | Delete | author only, hard delete, no activity | author only, soft delete, idempotent, no activity | different on purpose (soft delete rule) |
+| 9 | List | created asc, 200 | same (Comment_List) | same |
+| 10 | Replies | flat | one reply level (UI may send ParentCommentId 0 only) | UI |
+### Elements (rev 29)
+| Element | Old → New |
+|---|---|
+| Sales_EntityVisible Switch | deal / company / contact / Otherwise → + T = "task" → GetTask (CrmTask: Id, TenantId, DeletedAt = NullDate(), persona scope on AssignedUserId; max 1) → Assign IsVisible, EntityName = Title, CompanyId = 0 → End |
+| Comment_Create permission Switch | + Type = "task" → Sales_RequirePermission_task (manageDeals) → CleanBody check (same as deal) |
+| Comment_Create local EscTitle | NEW (escaped Sales_EntityVisible.EntityName) |
+| Comment_Create Sales_WriteActivity Metadata | If(Type = "task", {"commentId":N,"commentPreview":"…","kind":"task_comment","taskTitle":"…"}, old expression unchanged) |
+Unchanged: Comment_List, Comment_Delete (they work for tasks through Sales_EntityVisible / author check), all signatures. Side effect (read-only, accepted): Activity_ListFor("task", id) now returns the task's activity + task comments within task scope; Note_List("task", id) returns an empty list (Note_Create still rejects "task").
+Read-back: both Switches with every condition and first target, Metadata JSON checked character by character for both branches; validation 0 errors, 20 known warnings. No data written.
+Tests (CGB India only): Comment_Create("task", <task id>, "Called back") → ok; Comment_List("task", id) shows it; Activity_ListFor("task", id) shows the comment; as a sales member on a task assigned to someone else → not_found; Comment_Delete by another member → forbidden.
