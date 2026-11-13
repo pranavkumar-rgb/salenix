@@ -1565,3 +1565,31 @@ Browser tests (CGB India only) — each: pick a value → label changes → save
 4. Task drawer (Tasks page): Priority, Status, Assignee, Linked to + entity search.
 5. Company / Contact forms: Company, Owner. Stage change drawer: Hold / Rollback reason. Deal detail proof type, context card Source. Contacts Company filter, Home rep filter.
 6. Search with no match → "No matches"; Deal Name: type an exact existing name → no "+ Add" row.
+
+## T13 — real-data deal replace for Vizion (user approved 2026-11-13; DEV ONLY, decision 19)
+Input: data/salenix-import-deals-v2.json (git-ignored real data: oldDeals 249, deals 242; stages lead 232, qualified 5, proposal 3, hold 2). The v2 file has no company list, so `scripts/t13_prepare.py` joins it with data/salenix-import-contacts.json (T11 companies key → name, contacts row → email) and writes data/salenix-t13-input.json (git-ignored) = the text pasted into DevTools T13. The script prints counts / row numbers only.
+### Parity checklist (source app/dashboard/deals/actions.ts createDealAction / deleteDeal, lib/deals/stage-governance.ts, drizzle 0045 stage-history trigger; live Sales rev 31 read-only, Mentor session 5c804d21)
+| Item | Source / current rebuild | T13 | Mark |
+|---|---|---|---|
+| Stage gate on create (margin from qualified, close date from proposal) | enforced (source enforceGateOrThrow + violatesMissingCloseDate; Deal_CreateCore margin_required / close_date_required) | Deal_CreateCore input ImportBypassGates (default False) skips margin + close date; UI paths unchanged | different on purpose (user: keep the Excel stage) |
+| Hold needs reason + revisit date (D4 / D5) | enforced (hold_reason_required / hold_revisit_past) | skipped by ImportBypassGates for the 2 hold deals; HoldReason / HoldRevisitOn stay blank | different on purpose (user 2026-11-13) |
+| Won on create | refused (won_on_create) | refused; won / lost rows count as failed (none in file) | same |
+| Stage history | trigger inserts the first stage row | Deal_CreateCore writes the normal DealStageHistory row | same |
+| Activity "created" + company rollups | yes | yes (through Deal_CreateCore) | same |
+| Notifications on create | none (source notifies only on reassignment) | none: Deal_CreateCore has no Notification_Create / email / mention (read back) | same |
+| Offerings mandatory when OfferingsEnabled (ON in Vizion) | required (OFFERINGS_REQUIRED_MESSAGE) | no offering tag | different on purpose (user: no offering tag) |
+| Owner | form owner; assignDeals needed for another member | Sheetal, resolved once per call: UserProfile first name or full name "sheetal" + Member_GetRole active in the acting tenant; 0 or 2+ → stop, nothing written; caller must have assignDeals (else stop, because Deal_CreateCore would silently fall back to the caller) | user request |
+| Amount / margin / deal type / close date | form values | blank (0 / 0 / "" / null), currency INR | user request |
+| Deal contacts | form contact + DealContact | same as T11 Import_Deals: contacts by marker imp1-r<row> or email, Role other, IsPrimary = primary row | same as T11 |
+| Delete | Deal_SoftDelete: DeletedAt, DeletedBy, UpdatedAt, activity deleted, rollups | same writes, inline (no service-to-service call); only active deals with the same company (NormalizedName, like T11) + exact Name AND empty LegacyUuid | same |
+| Idempotency / marker | — | created deals get LegacyUuid "t13-r<row>"; delete matches only LegacyUuid = "" (one T11 deal is named like its company, so a new deal can have the same company + name); "already there" = active deal with same company + name and LegacyUuid ≠ "" | new (import only) |
+| Guard | DevOnly_ImportBatch: DevToolsEnabled + manageMembers | same | same as T11 |
+### Sales rev 32 — PUBLISHED 2026-11-13 13:43 UTC (env_app verified; Mentor session 5c804d21, closed)
+| Element | Change |
+|---|---|
+| Deal_CreateCore (private) | + inputs ImportBypassGates (Boolean, default False), LegacyUuid (Text, default ""); margin error, close_date_required If and hold If each get "and not ImportBypassGates"; NewDeal.LegacyUuid = Trim(LegacyUuid). Callers Deal_Create, Import_Deals unchanged (defaults → every rule still applies). With the bypass the whole hold branch is skipped (reason, revisit date, revisit-not-past). |
+| ReplaceOldDealRow / ReplaceNewDealRow / ReplaceDealsBatch | new structures (Public = No; JSON names = attribute names) |
+| ReplaceDeals_ResolveOwner (private) | UserProfile FirstName or "First Last" = OwnerName (Trim + ToLower), max 50 → Member_GetRole per profile; counts active members of the acting tenant; outputs OwnerId, MatchCount, OwnerLabel |
+| DevOnly_ReplaceImportedDeals (service) | inputs Phase check / delete / create, ItemsJson, DryRun (default True), OwnerName, ImportTag (default imp1); guard DevToolsEnabled + manageMembers + assignDeals; owner MatchCount ≠ 1 → owner_not_found / owner_ambiguous, nothing written; delete lane = inline Deal_SoftDelete writes on active deals with company (Import_FindCompanyId) + exact Name + LegacyUuid ""; create lane = stage check (lead…hold), company required, contacts via Import_FindContactId (marker imp1-r<row>, email), primary required when PrimaryRow > 0, already there = same company + name + LegacyUuid ≠ "", Deal_CreateCore (owner Sheetal, INR, blanks, ImportBypassGates True, LegacyUuid t13-r<row>), DealContact links Role other / IsPrimary; outputs OwnerFound, OwnerLabel, Deleted, AlreadyGone, Created, AlreadyThere, Failed, LinksCreated, Report (row numbers + codes); no notification / email / mention / realtime call. Handlers as DevOnly_ImportBatch. |
+Read-back: every If / Switch branch and every For Each first node / done target / early-exit target checked (per-item resets CompanyId / PrimaryContactId / S / ListClear present; delete → OldDeals, create → Deals, not swapped). Validation 0 errors, 20 known warnings.
+Next: user Studio step (Salenix_DevTools reference to DevOnly_ReplaceImportedDeals), then DevTools T13.
