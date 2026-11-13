@@ -1401,3 +1401,20 @@ Browser tests U4 (read-only, any workspace):
 4. Hover a trend week → tooltip; hover a donut slice → "Proposal: 5 (17%)".
 5. Manager: titles "Team …", no range segments.
 6. Member / viewer: old home unchanged.
+
+## U5 Companies / Contacts — parity checklist (notes/u5-u6-lists-tasks-palette-ui-spec.md U5a / U5b)
+| # | Item | Source | Rebuild | Status |
+|---|---|---|---|---|
+| 1 | Companies chips | My companies · Unassigned · Has active deals ("Deals column counts at least one open deal") · Recently active ("Last Activity within 14 days") · New (30d) ("Created in the last 30 days") · Stale ("Last Activity older than 30 days (or never)"); Clear all only when a chip is on, also resets sort | same order, tooltips, inputs HasActiveDeals / RecentActivityDays 14 / CreatedWithinDays 30 / Stale + StaleDays 30; Clear all + Recently deleted (L3b) kept | same (+ L3b diffs kept) |
+| 2 | Contacts chips | My contacts · Unassigned · Recently active ("Activity in the last 14 days") · No company ("Contacts not linked to a company") · New (30d) | same order (No company moved to position 4), RecentActivityDays 14, CreatedWithinDays 30; Company▾ chip (L3b) kept after New (30d) | same (+ L3b diff) |
+| 3 | Company detail panels | center column: Tasks → "Account activity" (month groups, source pills "Deal · name" / "Contact · name", empty "Nothing has happened on this account, its deals, or its contacts yet.") → Comments → Notes | same blocks and order (EntityTasksPanel, TimelinePanel default chip set, CommentsPanel, NotesPanel) | same (child activity rows without name show "Deal" / "Contact", D18) |
+| 4 | Contact detail panels | Tasks (no teammates → assignee "Owner (default)") → Comments → Notes → "Timeline" (no month groups, no source, empty "No activity yet for this record.") | same order; assignee list = members (diff: source passes no teammates) | same / small diff |
+| 5 | Permissions | notes / comments by entity permission; tasks manageDeals | CanEdit = manageCompanies / manageContacts for notes + comments, manageDeals for tasks | same |
+
+### U5 result — Salenix rev 50–51 (2026-11-13; rev 51 07:47 UTC env_app verified; Mentor session f86166d3)
+| Rev | Elements |
+|---|---|
+| 50 | Companies: chips Has active deals / Recently active / New (30d) / Stale with source tooltips (HasActiveDeals, RecentActivityDays 14, CreatedWithinDays 30, Stale + StaleDays 30), ClearFilters + Clear all visibility + empty-state tests extended. Contacts: chips Recently active / No company (moved, title added) / New (30d) before the Company▾ chip; RecentActivityDays 14, CreatedWithinDays 30 |
+| 51 | CompanyDetail: GetCompany.CanManageDeals; after the Deals card: EntityTasksPanel (company), TimelinePanel "Account activity" (month groups + source pills), CommentsPanel, NotesPanel. ContactDetail: GetContact.CanManageDeals; sx-grid-2 wrapped in a new sx-stack (Mentor copied the grid into the wrapper and deleted the original; contents checked: same cards / links / widget count), then EntityTasksPanel, CommentsPanel, NotesPanel, TimelinePanel "Timeline" |
+Layout difference (on purpose): source company detail is 3 columns (left fields, center panels, right contacts / deals) and contact detail 2 columns; the rebuild keeps its current cards and puts the panels below them in the source order.
+Browser tests U5 (chips read-only; panels write → CGB India): Companies chips filter (Stale + Recently active together → 0 rows, as source); Contacts "No company" sits between Recently active and New (30d); Company detail → add a task / note / comment; Account activity shows month headers ("November 2026 · n") and "Deal · <name>" pills on child deal notes / comments; Contact detail panels in order Tasks, Comments, Notes, Timeline.
