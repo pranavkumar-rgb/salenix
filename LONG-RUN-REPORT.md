@@ -1456,3 +1456,46 @@ Browser tests U6 (writes → CGB India):
 - U1–U6 done: Salenix rev 39 → 57 (Theme rev 8 for the CSS). Every revision env_app-verified; only Salenix and Salenix_Theme changed; no Sales / Foundation change, no data written by me, no Production.
 - Data gaps for later Sales add-only work: BoardCardItem HealthScore / ContactName / OriginalCloseDate / risk; Deal_ListBoard amount / close / stale / approval / PO / revisit inputs; TrendWeekItem LostRevenueMinor; SearchHitItem PriorityCode; Comment_Update (comment edit); call / meeting log action ("Log activity"); Task_Get; Task_List due sort + done-in-7-days count; Dashboard prior-period values, quota, highlights.
 - Open UI follow-ups: panels on DealDetail do not refresh after the edit / stage drawers; sales-persona home (My tasks etc.); company / contact detail 3-column source layout; Recently deleted page; cleanup of unused ApplyFilters / UI_ApprovalOptions / UI_DealSortOptions / StageFilter; re-select Phosphor icons (open warning list).
+
+# Batch V0 — browser bugs from the user test (2026-11-13)
+Order: Bug 1 board → Bug 2 search dropdowns → Item 3 Deal Name = offering select (user request). Writes for tests only in CGB India, except the 5-offering seed in Vizion (user go 2026-11-13).
+
+## V0-1 Pipeline board headers + card — parity checklist (source deals/board/_components/board-column.tsx 169-238, deal-card.tsx, lib/deals/currency.ts)
+Root cause (Mentor node text, Sales rev 29, session b63de2d0): Deal_ListBoard Assign D (inner totals For Each End) ran `Col = EmptyCol` and zeroed DealCount / ValueMinor / SlippedCount / SlippedMinor AFTER Assign E had filled them → every column returned 0 (Proposal "0" next to the Safeops360 card, header totals hidden by `DealCount > 0`); WeightedMinor / SlippedWeightedMinor were never computed. Salenix bindings (GetBoard → BoardColumnBlock Column = GetBoard.Columns.Current) were correct. Old "same deal in two columns": not reproducible; nested-list pattern re-checked (Col reset → ListAppend → cards into Columns[Length − 1].Cards).
+| # | Item | Source | Rebuild before | Rebuild after | Status |
+|---|---|---|---|---|---|
+| 1 | Column count | total deals in stage | always 0 | DealCount from GetBoardTotals | fixed (same) |
+| 2 | Value / weighted / at risk lines (only count > 0) | raw sum; round(sum × p / 100) "weighted"; slipped weighted "at risk (n pushed)" | hidden (count 0), weighted never computed | computed in Assign D | fixed (same) |
+| 3 | Card order | updated_at desc, id desc | ascending | descending | fixed (same) |
+| 4 | Card row 2 | company · contact (contact name, else email) | company only | company · contact (BoardCardItem.ContactName, add-only) | same (UI after the Studio reference refresh) |
+| 5 | Amount format | Intl en-US currency, 2 decimals ("₹2,500,000.00") | en-IN, 2 decimals ("₹25,00,000.00") | unchanged | different on purpose (decision 6 locale en-IN, Indian grouping) |
+| 6 | Zero amount | "₹0.00" | "₹0.00" | "₹0" | different on purpose (user request) |
+| 7 | Close date | en-US "Nov 13" | FormatDateTime "MMM d" | unchanged | same |
+| 8 | Owner on card | not shown | not shown | — | same |
+| 9 | Totals currency | workspace currency | "INR" literal | unchanged | backlog (OrganizationSettings currency read) |
+Elements: Sales rev 30 (2026-11-13 09:03 UTC, env_app verified; Mentor session b63de2d0): Deal_ListBoard Assign B starts with `Col = EmptyCol`; Assign D = only `Col.WeightedMinor = DecimalToLongInteger(Round(Col.ValueMinor * Prob / 100))` and `Col.SlippedWeightedMinor = …SlippedMinor…`; GetStageCards sort UpdatedAt desc, Id desc + left join Contact (Contact.Id = Deal.ContactId); BoardCardItem + ContactName (Text 250, last attribute) = Deal.ContactName, else Contact first + last, else Deal.ContactEmail, else Contact.Email. Validation 0 errors (known warnings). Salenix: zero amounts on the board via FractionDigits If(x = 0, 0, 2) (BoardDealCard Amount, BoardColumnBlock value / weighted / at risk + tooltip, Pipeline Hold lane); card "company · contact" line after the Studio reference refresh.
+
+## V0-2 Searchable dropdowns — parity checklist (user request; source deal-company-contact-fields.tsx, create-deal-form.tsx, task forms use native selects with ALL options)
+Inventory (Mentor read-only, Salenix rev 57): 29 native Dropdowns + filter popovers; no DropdownSearch. Company_ListOptions / Contact_ListOptions cap 20 with no way to include the current value → Greenlam not pickable.
+| # | Item | Source | Rebuild | Status |
+|---|---|---|---|---|
+| 1 | Company / Contact pickers | native select, all rows, Contact only for the chosen company + "Other (individual / no company)" | SxSearchSelect: type → Company_ListOptions / Contact_ListOptions(Search, IncludeId) with 250 ms debounce, top 20 + current value always listed; contact list still filtered by the chosen company | different on purpose (user request: search); "Other" option = backlog L20 (unchanged) |
+| 2 | Owner / Assignee / Rep | native select, all members | SxSearchSelect over Member_ListOptions (all active members, ≤ 200), filtered on the client while typing | different on purpose (search); client filter because the member list is complete (≤ 200) |
+| 3 | Short fixed lists (Stage, Deal type, Currency, Hold / rollback reason, proof type, task priority / status / type / repeat / stage blocking, Source, Linked-to type) | native select | SxSearchSelect, client filter | different on purpose (user request) |
+| 4 | Task "Linked to" entity | native select (source lists all) | SxSearchSelect server search: Deal_List(Search, 20) / Company_ListOptions / Contact_ListOptions | different on purpose |
+| 5 | Deal filter Company ▾ / Owner ▾ popovers | popover + search | already searchable (Company server search, Owner client filter); add 250 ms debounce on the company search | same |
+| 6 | Contacts filter "Company" dropdown, Home rep filter | select | SxSearchSelect | different on purpose |
+| 7 | Not changed | — | MainLayout workspace switcher (few rows, not a form), BoardDealCard "Move stage…" and DealDetail "Change stage…" (action menus) | kept native |
+| 8 | Bindings / save | — | each SxSearchSelect raises Changed(Value, Label); the parent assigns the same variable as before and runs the old OnChange handler; save flows unchanged | same |
+CSS: Salenix_Theme rev 9 = v2.4 section (sx-ssel*, 22 lines, theme/v24-additions.css, 1,908 → 1,930 lines, 0 errors).
+
+## V0-3 Deal Name = offering select — parity checklist (user request; source create-deal-form.tsx Field "Name" free text, settings/offerings createOfferingAction, lib/offerings/queries.ts createOffering)
+| # | Item | Source | Rebuild | Status |
+|---|---|---|---|---|
+| 1 | Label / field | "Name" *, free text, placeholder "Acme — annual contract" | "Deal Name" *, SxSearchSelect over Offering_List (active); last option "+ Add “<typed>” as a new deal name" → Offering_Create → selected; saved as Deal.Name | different on purpose (user request) |
+| 2 | Existing deal whose name is not in the catalog | — | loads and shows its current name (ValueLabel); saved unchanged unless the user picks another | same behaviour for old data |
+| 3 | Offering create | manageOfferings; name trim 1–120 "Give the offering a name" / "Keep the name under 120 characters"; category product / service required; duplicate (case-insensitive) → error "“X” already exists in this workspace." | Offering_Create(Name): manageDeals; same trim / length texts; Category "product"; duplicate → returns the existing id (OutcomeCode existing); retired duplicate → retired "“X” is retired in this workspace."; activity offering created | different on purpose (user request: any deal editor may add; duplicate reused instead of refused) |
+| 4 | Sort order | max in category + 10 | same | same |
+| 5 | Seed | 14 default offerings for new tenants | DevOnly_SeedOfferingsV0: SafeOps360 (product), DMS (product), OutSystems (service), Manpower (service), ServiceNow (service) — acting workspace only, create-missing only; run in Vizion (user go 2026-11-13) and CGB India | different on purpose (user list; categories chosen by me, editable later in Salenix_Admin) |
+| 6 | Deal ↔ offering tag | offerings field (multi) when offeringsEnabled | after save: Deal_SetOfferings(deal, offering id, primary = it) only when Foundation_GetFlags.OfferingsEnabled; flag NOT changed by me | partial (flag decision with the user) |
+| 7 | Deal type | "Distinguishes same-named deals on the board (optional)." | unchanged | same |
