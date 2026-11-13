@@ -1221,3 +1221,38 @@ Decisions on the run N open questions recorded in CLAUDE.md decision 25. N10 = i
 Unchanged: Comment_List, Comment_Delete (they work for tasks through Sales_EntityVisible / author check), all signatures. Side effect (read-only, accepted): Activity_ListFor("task", id) now returns the task's activity + task comments within task scope; Note_List("task", id) returns an empty list (Note_Create still rejects "task").
 Read-back: both Switches with every condition and first target, Metadata JSON checked character by character for both branches; validation 0 errors, 20 known warnings. No data written.
 Tests (CGB India only): Comment_Create("task", <task id>, "Called back") → ok; Comment_List("task", id) shows it; Activity_ListFor("task", id) shows the comment; as a sales member on a task assigned to someone else → not_found; Comment_Delete by another member → forbidden.
+
+# UI batch U (Salenix, uses Sales rev 29) — started 2026-11-13
+Instruction (user, 2026-11-13): U1–U6 in Salenix only; CSS only in Salenix_Theme, then STOP for the user's release / reference refresh; publish after each clean batch; tests only in CGB India; commit + push per batch.
+Source specs (file:line, exact strings): notes/u2-deal-detail-ui-spec.md, notes/u3-u4-board-home-ui-spec.md, notes/u5-u6-lists-tasks-palette-ui-spec.md; U1 = source deal-filter-bar.tsx read directly.
+Read-only check first (Mentor session 45ea6603): Salenix rev 38 references Sales rev 29 (all 22 new actions + 9 structures visible), Foundation 29 actions, OutSystemsCharts (already referenced → usable for U4 charts); Deals screen calls Salenix_Sales.Deal_List directly from data action GetDeals (no UI_ wrapper); validation 0 errors / 30 warnings (27 Phosphor icon warnings = known open item, 2 unused UI_ApprovalOptions / UI_DealSortOptions, 1 Login UI_StartSession).
+
+## T3 Theme v2.3 — Salenix_Theme rev 8 (published 2026-11-13 04:37 UTC, Mentor session 62ca59eb)
+All CSS for U1–U6 in one theme step so there is only one release / refresh stop. 6 append-only parts (big prompts get a CloudFront 403), each verbatim; style sheet 1,551 → 1,908 lines (51,492 → 93,303 chars); validation 0 errors, 1 known warning (Google Fonts URL). Classes: theme/THEME-GUIDE.md "v2.3 classes"; source copy theme/v23-additions.css (appended to theme/salenix-theme.css). No existing rule changed.
+Read-back (REPORT ONLY after publish): v2.3 section = lines 1553–1908, 356 lines; rule and comment text match what was sent, braces balance (355 / 355), content "\2713" and "" intact, LF endings, no trailing spaces. Mentor stored 4 extra leading spaces on 339 of the appended lines (cosmetic, no render effect) → not re-published; theme/salenix-theme.css keeps the unindented text.
+Deliberate choices: popovers = If + absolutely placed panel + transparent full-screen backdrop Link (no OutSystems UI popover pattern, so the sx-fchip look stays); stage bar widths via classes sx-w-0/2/5/…/100 (no inline styles); KPI tint via a CSS variable per tint class.
+**User step (Studio):** release Salenix_Theme rev 8, then refresh the Salenix reference to it (references only) and publish from Studio. After that the U1–U6 UI batches run.
+
+## Decisions taken for U (recommended options from the specs; say if you want another)
+| # | Question | Decision | Why |
+|---|---|---|---|
+| D1 | Deals chip "Score" vs source "Health" | label "Health" with options "Strong (≥70)", "Moderate (40–69)", "Weak (<40)", active "Health: Strong" | source label (deal-filter-bar.tsx:453-474) |
+| D2 | Company chip (source multi-select company names) | single-select popover with search ("Search companies…"), active "Company: <name>" → CompanyId | Deal_List has one CompanyId (decision 25(6)) |
+| D3 | Stage / Owner chips | multi-select popovers as source → StageCodes / OwnerUserIds comma lists; "Include won/lost" chip (L3) kept | source + existing L3 chip |
+| D4 | Sort direction | header click: asc → desc → back to "updated" (arrow ↑/↓ shows the direction), SortDir sent | user asked (L14); source has no direction |
+| D5 | Recently deleted (Deals) | in-place deleted view like Companies / Contacts (L3b): link "Recently deleted" (owner / admin only = deleteDeals) + banner "Showing deleted deals · Back", columns Name / Amount / Deleted on / Restore | same pattern as L3b; source has a separate page (open item) |
+| D6 | Delete deal on DealDetail edit drawer | Delete left in the footer for deleteDeals (owner / admin) with the inline confirm used on company / contact (L5b); after delete → message "Deal deleted." + navigate to Deals | source deletes without confirm and only from the list drawer; consistency with L5b |
+| D7 | Board empty column text | "No deals" (source "Drop here" promises drag-and-drop) | no DnD |
+| D8 | Board capped column | "Showing 50 of <n> — open the List view for the rest" | no per-column paging |
+| D9 | Board card health chip | band word chip ("Strong" / "Moderate" / "At risk") until BoardCardItem has HealthScore | Sales unchanged in this run |
+| D10 | Home for manager | admin layout, titles "Team …", range fixed last 90 days (no picker) | one block; manager-only widgets backlog |
+| D11 | KPI delta chips, quota / coverage tiles | omitted | no prior-period / quota data |
+| D12 | Timeline "Emails" chip | dropped (deal: All / Calls / Meetings / Stage changes / Notes; company / contact: All / Mine / Teammates / Comments / Notes / Activity / Automation) | Comms not built |
+| D13 | "Log activity" button, comment Edit | not built | no server action (call / meeting log, Comment_Update) |
+| D14 | Tasks search | keeps the active chips | source quirk drops them |
+| D15 | Task row company / contact link | detail screen | source links the unfiltered list (quirk) |
+| D16 | Palette company / contact hit | detail screen | no list Search input needed |
+| D17 | Palette task badge | status label (SearchHitItem has no priority) | Sales unchanged |
+| D18 | Company timeline source pill without SourceName | "Deal" / "Contact" without name | activity rows have no SourceName |
+| D19 | Tasks rail item | all personas (source: sales only) | user asked for the rail item |
+| D20 | Viewer on task drawer | edit controls hidden | source quirk shows them |

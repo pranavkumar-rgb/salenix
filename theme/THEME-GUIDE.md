@@ -1,4 +1,4 @@
-# Salenix theme guide (v2.2)
+# Salenix theme guide (v2.3)
 
 Theme file: `theme/salenix-theme.css` (Salenix_Theme -> theme "Salenix", Public). UI prompts use only the classes below; no inline styles, no new CSS in apps.
 
@@ -234,6 +234,38 @@ v2.2: the backdrop shows a pointer; the panel is full width below 640px; form bl
 | `sx-mono` | Money, counts, ids | `font-mono tabular-nums` |
 | `sx-truncate` | One-line ellipsis | `truncate` |
 | `sx-text-positive` / `-warning` / `-negative` | Coloured status text | emerald/amber/rose-700 |
+
+## v2.3 classes (Salenix_Theme rev 8, 2026-11-13, UI batch U; source copy theme/v23-additions.css)
+Doubled selectors again only raise specificity; use the single class name.
+
+### Filter popover chips (U1, deal-filter-bar.tsx)
+| Class | Use |
+|---|---|
+| `sx-fpop-wrap` | Container around a popover chip (position relative) |
+| `sx-fchip-caret` | Empty Container inside an `sx-fchip` Link/Button = the ▾ caret (maroon when the chip has `sx-fchip-active`) |
+| `sx-fchip-x` | Small "×" Link inside an active chip (clear that filter) |
+| `sx-fpop-backdrop` | Transparent full-screen Link under an open popover; OnClick closes it |
+| `sx-fpop` (+ `sx-fpop-right`) | Popover panel under the chip (14rem min) |
+| `sx-fpop-list` / `sx-fpop-item` (+ `sx-fpop-item-active`) | Option list (max 14rem, scroll) / one option Link |
+| `sx-fpop-check` (+ `sx-fpop-checked`) | Checkbox square inside an option (✓ via CSS) |
+| `sx-fpop-dot` + `sx-dot-strong` / `-moderate` / `-weak` | Health dot |
+| `sx-fpop-body`, `sx-fpop-grid`, `sx-fpop-field`, `sx-fpop-input`, `sx-fpop-hint`, `sx-fpop-empty` | Amount / Close date / search popover body |
+| `sx-fpop-actions` (+ `sx-fpop-actions-border`), `sx-fpop-btn` (+ `sx-fpop-btn-primary`) | Clear / Apply buttons |
+| `sx-row-action` | Text action in a table row ("Restore") |
+
+### Deal detail panels (U2)
+`sx-side-section` / `sx-side-title` (sidebar section + 11px uppercase title) · `sx-field-card`, `-head`, `-label`, `-value` (+ `sx-field-card-empty`), `-actions` (Context card fields) · `sx-icon-btn` (+ `sx-icon-btn-primary`) (pencil / ✓ / ✕) · `sx-panel-head`, `sx-panel-title`, `sx-panel-meta`, `sx-count-badge`, `sx-collapsed-panel` (card headers; "Tasks — none yet") · tasks panel: `sx-quickadd`, `sx-quickadd-row`, `sx-quickadd-grid`, `sx-tiny-label`, `sx-task-group`, `sx-task-group-title` (+ `sx-task-group-overdue`), `sx-task-row` (+ `sx-task-done`), `sx-task-check` (+ `sx-task-check-done` / `-readonly`), `sx-task-main`, `sx-task-title-line`, `sx-task-title`, `sx-task-meta`, `sx-prio-dot` (+ `sx-prio-medium` / `-high` / `-urgent`), `sx-mini-chip` (+ `-overdue` / `-soon` / `-violet`), `sx-done-toggle` · notes / comments: `sx-composer`, `sx-composer-actions`, `sx-kbd-hint`, `sx-note-list`, `sx-note`, `sx-note-head`, `sx-note-author`, `sx-note-time`, `sx-note-body`, `sx-hover-actions`, `sx-hover-link` (+ `-danger`), `sx-comment-list`, `sx-comment`, `sx-avatar` (+ `sx-avatar-sm`), `sx-comment-main`, `-head`, `-author`, `-time`, `-body`, `sx-replies`, `sx-mention` (+ `sx-mention-me`), `sx-mention-wrap`, `sx-mention-pop`, `sx-mention-pop-title`, `sx-mention-item` (+ `-active`), `sx-mention-name`, `sx-mention-email` · timeline: `sx-tl-chips`, `sx-tl-chip` (+ `sx-tl-chip-active`), `sx-tl-chip-count`, `sx-tl-month`, `sx-tl-list`, `sx-tl-item`, `sx-tl-icon` (+ `sx-tl-comment` / `-note` / `-stage` / `-task` / `-call` / `-meeting`), `sx-tl-body`, `sx-tl-text`, `sx-tl-actor`, `sx-tl-quote`, `sx-tl-detail`, `sx-tl-meta`, `sx-tl-time`, `sx-tl-source`.
+
+### Pipeline board (U3)
+`sx-board` (horizontal column row) · `sx-board-col`, `-col-head`, `-col-left`, `-count`, `-totals`, `-value`, `-weighted`, `-slipped`, `-body`, `-empty`, `-more`, `sx-board-banner` · collapsed Hold: `sx-board-hold`, `-hold-head`, `-hold-icon`, `-hold-label`, `-hold-count`, `-hold-caret`, `-hold-body`, `-hold-value`, `-hold-note` · `sx-board-stage` + `sx-board-stage-<code>` (column pill) · card: `sx-dcard` + `sx-dcard-<health band strong / moderate / at_risk>` or `sx-dcard-won` / `-lost`, + `sx-dcard-severe` (second red spine), `sx-dcard-head`, `-name`, `-sub`, `-foot`, `-amount`, `-tags`, `-date` (+ `sx-dcard-date-overdue`) · pills: `sx-pill` + `sx-pill-hold` / `-pending` / `-overdue` / `-watch` / `-severe` / `-deweighted` / `-rollback` / `-strong` / `-moderate` / `-at_risk` · `sx-slip-toggle` (+ `sx-slip-toggle-active`).
+
+### Home (U4)
+`sx-greeting`, `sx-greeting-sub`, `sx-greeting-ws`, `sx-persona-pill` · `sx-home-toolbar`, `sx-rep-filter` + Dropdown `sx-rep-select`, `sx-seg` / `sx-seg-btn` (+ `sx-seg-active`), `sx-range-custom` + `sx-range-date`, `sx-range-label`, `sx-record-counts` (numbers in `<b>`: use an Expression with Style Classes … or a Text with bold) · KPI: `sx-kpi sx-kpi-tint` + `sx-tint-violet` / `-emerald` / `-sky` / `-amber` (default maroon), `sx-kpi-sub`, `sx-kpi-scope` · charts: `sx-chart-card`, `sx-chart-badges`, `sx-chart-badge` (+ `-green` / `-outline`), `sx-chart-title`, `sx-chart-subtitle`, `sx-chart-body`, `sx-chart-legend`, `sx-legend-dot` (+ `sx-legend-maroon` / `-won` / `-lost`), `sx-chart-empty`, `sx-home-grid` (2/3 + 1/3) · stage bars: `sx-sbars`, `sx-sbar-head`, `sx-sbar-row`, `sx-sbar-label`, `sx-sbar-track`, `sx-sbar-fill` (+ `sx-sbar-qualified` / `-proposal` / `-negotiation` / `-won`) + width class `sx-w-N` (N = 0, 2, 5, 10 … 100; data-driven width without inline styles), `sx-sbar-value`, `sx-sbar-deals`, `sx-sbar-prob`, `sx-ratio` (+ `-good` / `-warn` / `-bad`) · donut: `sx-donut-total`, `-total-label`, `-total-value`, `sx-donut-legend`, `sx-donut-row`, `sx-donut-pct`, `sx-dot` + `sx-dot-<stage>`.
+
+### Tasks page + command palette (U6)
+`sx-tasklist`, `sx-taskrow` (+ `sx-taskrow-overdue` / `-done`), `sx-row-delete` (hover-revealed), `sx-taskrow-title`, `sx-taskrow-meta`, `sx-taskrow-link`, `sx-tbadge` (+ `sx-tbadge-<priority medium / high / urgent>` or `sx-tbadge-<status in_progress / completed>`), `sx-done-bar`, `sx-tasklist-note`, `sx-detail-section-title`, `sx-click-edit` (+ `-empty` / `-title`), `sx-meta-grid`, `sx-meta-label`, `sx-meta-value`, `sx-link-pill`, `sx-btn sx-btn-success` · palette: `sx-palette` (fixed overlay, show with an If), `sx-palette-backdrop` (Link, closes), `sx-palette-panel`, `sx-palette-inputrow` + Input `sx-palette-input`, `sx-palette-results`, `sx-palette-group`, `sx-palette-item` (+ `sx-palette-item-active`), `sx-palette-icon` (+ `-action`), `sx-palette-text`, `sx-palette-title`, `sx-palette-sub`, `sx-palette-badge`, `sx-palette-empty`, `sx-palette-footer` (with `sx-kbd`).
+
+Icons used by U batches (Phosphor): pencil-simple, check, x, check-square, note, chat-circle, arrows-left-right, phone, users, pause-circle, caret-right, flag, warning, arrow-u-up-left, trash, calendar, clock-counter-clockwise, arrow-elbow-down-left, plus, magnifying-glass, funnel.
 
 ## Notes
 - Values copied from Tailwind classes; Tailwind v4 status colours (emerald, amber, rose, red, orange) are written as their hex equivalents.
