@@ -1342,3 +1342,33 @@ Browser tests U2 (CGB India only — writes):
 6. Notes: add, edit own (Ctrl+Enter saves, Esc cancels), delete own; another member's note has no Edit / Delete.
 7. Comments: type "@" → picker "Mention teammate" → ↓ Enter inserts @[Name](id) → Comment → chip "@Name" (amber when it is you); Reply → "Reply to <name>…" → Reply; Delete own.
 8. Activity: rows for created / stage change ("… moved deal X from lead to qualified") / notes / comments; chip counts; "Stage changes" chip filters.
+
+## U3 Pipeline board — parity checklist (notes/u3-u4-board-home-ui-spec.md part U3; source deals/board/*)
+| # | Item | Source | Rebuild | Status |
+|---|---|---|---|---|
+| 1 | Header | "Pipeline", subtitle "<workspace> — drag deals across stages.", List / Board tabs, no New deal | "Pipeline", subtitle workspace name only, tabs kept, New deal link kept (L3) | different on purpose (no drag-and-drop; L3 link) |
+| 2 | Data | 7 stages, Won / Lost not time-bounded, persona scope | Deal_ListBoard (replaces Deal_ListPipeline) | same |
+| 3 | Filters | full deal filter bar + "Show slipped deals only (n)" + active-filter pills | chips the board action supports: Stage▾ (multi → StageCodes), My deals, Unassigned, Health▾, Slipped only, Company▾ (single), Owner▾ (single) + Clear all; SlippedOnly toggle "Show slipped deals only (n)" (hidden when n = 0 and off); Amount / Close / Stale / approval / PO / revisit chips not on the board; no pills row | subset (backlog: Deal_ListBoard inputs) |
+| 4 | Read-only banner | "Read-only — your role can't move deals between stages." when no manageDeals | same (sx-board-banner) | same |
+| 5 | Column order / visibility | lead … lost; stage filter shows selected; Hold hidden when 0 unless filtered; Hold collapsed until clicked | same (HoldExpanded variable) | same |
+| 6 | Column header | count (tooltip "<n> in stage") + stage pill; right (only count > 0): value, "<x> weighted" (tooltip "Weighted at <p>% stage probability"), "<x> at risk (<n> pushed)" in rose when slipped > 0 (tooltip with raw value) | same; money via Money_FormatText | same |
+| 7 | Collapsed Hold | "Hold" + count, amount, "parked · click to expand", whole lane clickable | same (sx-board-hold) | same |
+| 8 | Empty column | "Drop here" | "No deals" | different on purpose (D7) |
+| 9 | Capped column | infinite scroll | "Showing 50 of <n> — open the List view for the rest" (List link → Deals) | different on purpose (D8) |
+| 10 | Card | left spine by health / won / lost, extra red spine when severe; name link → detail; chip "On hold" (hold) or health score; row 2 company · contact; "Pending approval" (won + pending); footer amount (mono) + close date (red when overdue), "Overdue", "Pushed ×n" (watch amber / severe rose + flag / de-weighted "· 50%"), risk chip, "Rolled back ×n" | same except health chip shows the band word ("Strong" / "Moderate" / "At risk") — no HealthScore in BoardCardItem (D9); row 2 company only (no contact); no risk chip (no risk data); slip tooltip "Pushed <n>× (<d> days slipped)" (no original date) | partly (data gaps) |
+| 11 | Move stage | drag-and-drop with reason modals | keep the existing "Move stage…" control per card → StageChangeDrawer (if present today) | different on purpose (no DnD) |
+
+### U3 result — Salenix rev 45–46 (2026-11-13; rev 46 07:06 UTC env_app verified; Mentor session 42411b22)
+| Rev | Elements |
+|---|---|
+| 45 | NEW block BoardDealCard (spine class by stage / health band + sx-dcard-severe; name link → DealDetail; "On hold" or health band pill; company line; "Pending approval"; amount Money_FormatText 2 decimals; close date (red when overdue), "Overdue", "Pushed ×n" watch / severe + flag / de-weighted "· 50%", "Rolled back ×n", tooltips; per-card "Move stage…" dropdown with its own local MoveTarget → event MoveRequested) and BoardColumnBlock (count + stage pill, value / "<x> weighted" / "<x> at risk (<n> pushed)" with tooltips, "No deals", capped line "Showing 50 of n — open the List view for the rest") |
+| 46 | Pipeline screen: GetBoard (Deal_ListBoard + SlippedTotal), GetMyContext (MyUserIdText, CanEdit = manageDeals), GetCompanyOptions; filter bar Filter · Stage▾ · My deals · Unassigned · Health▾ · Slipped only · Company▾ · Owner▾ (single) · Clear all; "Show slipped deals only (n)" toggle; read-only banner; List BoardList (class sx-board on the list) with column visibility (Hold hidden when 0 unless filtered) and collapsed Hold lane → ExpandHold (no collapse again, as source); subtitle = workspace name. Deleted (references reported first): Form1 card, Gallery + old lists / cards, GetPipeline, GetPipelineAfterFetch, RefreshPipeline, OpenMove, CollapseHold, MoveTarget, Search |
+Validation 0 errors (known warnings + 2 single-child suggestions). Deal_ListPipeline is no longer used by Salenix (Sales action kept).
+Browser tests U3 (read-only except Move):
+1. Pipeline shows Lead, Qualified, Proposal, Negotiation, (Hold collapsed lane when it has deals), Won, Lost; column counts = Deals list per stage.
+2. Header lines: value, "… weighted" (hover "Weighted at 60% stage probability" on Proposal), rose "… at risk (n pushed)" only where pushed deals exist.
+3. Cards: health spine colours, "Overdue" on past-close open deals, "Pushed ×2" amber / "Pushed ×3" rose + flag, "Rolled back ×1" violet, "Pending approval" on pending Won deals.
+4. Click the Hold lane → expands to a normal column.
+5. Stage▾ Won + Lost → only those 2 columns; My deals / Unassigned / Health / Company / Owner filter the cards; "Show slipped deals only (n)" toggles.
+6. Viewer: amber read-only banner, no Move dropdown.
+7. Member (CGB India): Move stage… → Qualified on a Proposal card → StageChangeDrawer asks for the rollback reason → card moves.
